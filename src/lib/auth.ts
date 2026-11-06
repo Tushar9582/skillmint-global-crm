@@ -31,14 +31,23 @@ export function isDemoModeRequested(): boolean {
   return process.env.DEMO_MODE === 'true';
 }
 
-export function isStagingDemoMode(): boolean {
-  const passwordHash = process.env.DEMO_ADMIN_PASSWORD_HASH || '';
+export function isPublicDemoMode(): boolean {
+  // Explicit opt-in for a public, browser-local preview. Fail closed if any cloud database is configured.
   return process.env.NODE_ENV === 'production' && isDemoModeRequested()
     && process.env.DEMO_DATA_ISOLATED === 'true'
-    && !process.env.DATABASE_URL && !process.env.NETLIFY_DATABASE_URL
-    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(process.env.DEMO_ADMIN_EMAIL || '')
+    && process.env.DEMO_PUBLIC_PREVIEW === 'true'
+    && !process.env.DATABASE_URL && !process.env.NETLIFY_DATABASE_URL;
+}
+
+export function isStagingDemoMode(): boolean {
+  const passwordHash = process.env.DEMO_ADMIN_PASSWORD_HASH || '';
+  const isolated = process.env.NODE_ENV === 'production' && isDemoModeRequested()
+    && process.env.DEMO_DATA_ISOLATED === 'true'
+    && !process.env.DATABASE_URL && !process.env.NETLIFY_DATABASE_URL;
+  const credentialed = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(process.env.DEMO_ADMIN_EMAIL || '')
     && /^\$2[aby]\$(1[0-4])\$[./A-Za-z0-9]{53}$/.test(passwordHash)
     && (process.env.DEMO_SESSION_SECRET || '').length >= 32;
+  return isolated && (isPublicDemoMode() || credentialed);
 }
 
 export function demoSessionToken(payload: string, secret: string): string {
@@ -119,6 +128,7 @@ export async function getActor(): Promise<Actor | null> {
   if (isDevDemoMode()) return DEMO_ACTOR;
   if (isDemoModeRequested()) {
     if (!isStagingDemoMode()) return null;
+    if (isPublicDemoMode()) return { ...DEMO_ACTOR, full_name: 'SkillMint Demo Administrator', email: 'demo@skillmint.local' };
     return resolveDemoActor((await cookies()).get(COOKIE_NAME)?.value);
   }
   const token = (await cookies()).get(COOKIE_NAME)?.value;
