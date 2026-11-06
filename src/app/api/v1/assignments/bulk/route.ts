@@ -1,0 +1,51 @@
+import { api, body, json } from '@/lib/http';
+import { ensureAdmin, HttpError } from '@/lib/auth';
+import { audit, notify } from '@/lib/audit';
+import { one, sql, transaction } from '@/lib/db';
+import { CATALOG } from '@/lib/catalog';
+import { UUID } from '@/lib/records';
+
+const allowed=new Set(['company-leads','clients','jobs','candidates','applications','interviews']);
+
+export const POST=api(async(request,actor)=>{
+  ensureAdmin(actor);
+  const data=await body(request);
+  const resource=String(data.resource||'');
+  const ids=Array.isArray(data.ids)?data.ids.map(String):[];
+  const target=String(data.to_owner||'');
+  const reason=String(data.reason||'Admin bulk assignment').trim().slice(0,500);
+  if(!allowed.has(resource)) throw new HttpError(400,'Choose an assignable module');
+  if(!ids.length||ids.length>200||new Set(ids).size!==ids.length||!ids.every(id=>UUID.test(id)))
+    throw new HttpError(400,'Choose 1–200 unique records');
+  if(!UUID.test(target)) throw new HttpError(400,'Choose a recipient');
+  const table=CATALOG[resource].table;
+  const result=await transaction(async client=>{
+    const owner=await one<{full_name:string}>('SELECT full_name FROM users WHERE id=$1 AND organization_id=$2 AND active=true',
+      [target,actor.organization_id],client);
+    if(!owner) throw new HttpError(400,'Recipient is not an active employee');
+    const records=await sql<{id:string;owner_id:string|null}>(
+      `SELECT id,owner_id FROM ${table} WHERE organization_id=$1 AND id=ANY($2::uuid[]) FOR UPDATE`,
+      [actor.organization_id,ids],client);
+    if(records.length!==ids.length) throw new HttpError(409,'Some selected records are no longer available');
+    const changed=records.filter(r=>r.owner_id!==target);
+    if(changed.length) {
+      await sql(`UPDATE ${table} SET owner_id=$1,updated_at=now()
+                 WHERE organization_id=$2 AND id=ANY($3::uuid[])`,
+        [target,actor.organization_id,changed.map(r=>r.id)],client);
+      for(const record of changed)await sql(
+        `INSERT INTO assignment_history(organization_id,entity_type,entity_id,from_owner,to_owner,changed_by,reason)
+         VALUES($1,$2,$3,$4,$5,$6,$7)`,
+        [actor.organization_id,table,record.id,record.owner_id,target,actor.id,reason],client);
+      if(['company_leads','candidates','applications'].includes(table)) for(const record of changed)await sql(
+        `UPDATE followups SET owner_id=$1 WHERE organization_id=$2 AND target_type=$3
+         AND target_id=$4 AND status='pending' AND owner_id IS NOT DISTINCT FROM $5::uuid`,
+        [target,actor.organization_id,table,record.id,record.owner_id],client);
+      await notify(actor.organization_id,target,'Bulk work assignment',
+        `${changed.length} ${resource.replace('-', ' ')} record(s) have been assigned to you.`,
+        `/${resource}`,client);
+    }
+    await audit(actor,'bulk_assign',table,null,{ids,recipient:target,changed:changed.length,reason},client);
+    return {requested:ids.length,changed:changed.length,recipient:owner.full_name};
+  });
+  return json({data:result});
+});
