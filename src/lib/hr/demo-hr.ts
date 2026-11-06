@@ -20,11 +20,15 @@ export const DEMO_PEOPLE: Record<Role, DemoActor> = {
 };
 
 export function getDemoRole(): Role {
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_DEMO_MODE === 'true') return 'admin';
   if (typeof window === 'undefined') return 'admin';
   const stored = localStorage.getItem(ROLE_KEY) as Role | null;
   return stored && stored in DEMO_PEOPLE ? stored : 'admin';
 }
-export function setDemoRole(role: Role) { localStorage.setItem(ROLE_KEY, role); }
+export function setDemoRole(role: Role) {
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_DEMO_MODE === 'true') return;
+  localStorage.setItem(ROLE_KEY, role);
+}
 export const demoActor = (): DemoActor => DEMO_PEOPLE[getDemoRole()];
 
 export const uid = () => crypto.randomUUID();

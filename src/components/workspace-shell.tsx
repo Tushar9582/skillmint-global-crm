@@ -59,6 +59,7 @@ export function WorkspaceShell({user:serverUser,children}:{user:CurrentUser;chil
   const [loggingOut,setLoggingOut]=useState(false);
   const [collapsed,setCollapsed]=useState<Record<string,boolean>>({});
   const demo=process.env.NODE_ENV==='development' && process.env.NEXT_PUBLIC_DEV_DEMO_MODE==='true';
+  const stagingDemo=process.env.NODE_ENV==='production' && process.env.NEXT_PUBLIC_DEMO_MODE==='true';
   const [demoRole,setRole]=useState<Role|null>(null);
   useEffect(()=>{if(demo)setRole(getDemoRole());},[demo]);
   if(demo&&!demoRole)return null;
@@ -85,13 +86,13 @@ export function WorkspaceShell({user:serverUser,children}:{user:CurrentUser;chil
             </div>;
           })}
         </nav>
-        <div className="sidebar-bottom">{demo?<div className="cloud-chip"><span className="status-dot"/>DEVELOPMENT MODE<small>Browser-local demo data</small><select className="role-switch" aria-label="Demo role" value={demoRole||'admin'} onChange={e=>{setDemoRole(e.target.value as Role);window.location.reload();}}>{ROLES.map(r=><option key={r} value={r}>View as: {ROLE_LABELS[r]}</option>)}</select></div>:<div className="cloud-chip"><span className="status-dot"/>SECURE CLOUD WORKSPACE<small>Private recruitment data</small></div>}
+        <div className="sidebar-bottom">{demo?<div className="cloud-chip"><span className="status-dot"/>DEVELOPMENT MODE<small>Browser-local demo data</small><select className="role-switch" aria-label="Demo role" value={demoRole||'admin'} onChange={e=>{setDemoRole(e.target.value as Role);window.location.reload();}}>{ROLES.map(r=><option key={r} value={r}>View as: {ROLE_LABELS[r]}</option>)}</select></div>:stagingDemo?<div className="cloud-chip"><span className="status-dot"/>ISOLATED DEMO MODE<small>Browser-local simulated data</small></div>:<div className="cloud-chip"><span className="status-dot"/>SECURE CLOUD WORKSPACE<small>Private recruitment data</small></div>}
           <div className="side-user"><span className="avatar">{user.full_name.slice(0,2).toUpperCase()}</span><span><b>{user.full_name}</b><small>{ROLE_LABELS[user.role]}</small></span><button onClick={logout} disabled={loggingOut} title="Sign out"><LogOut size={16}/></button></div>
         </div>
       </aside>
       <div className="workspace-main">
         <header className="topbar"><div className="topbar-leading"><button className="mobile-menu" onClick={()=>setOpen(true)} aria-label="Open menu"><Menu size={22}/></button><div className="breadcrumbs">Workspace <span>/</span><b>{page}</b></div></div>
-          <div className="topbar-actions"><form className="global-search" onSubmit={submitSearch}><Search size={16}/><input placeholder="Search candidates…" value={search} onChange={event=>setSearch(event.target.value)}/></form><span className="topbar-cloud"><span className="status-dot"/>SECURE CLOUD</span><Link href="/notifications" className="top-icon" aria-label="Notifications"><Bell size={19}/></Link><Link href="/profile" className="top-avatar">{user.full_name.charAt(0).toUpperCase()}</Link></div>
+          <div className="topbar-actions"><form className="global-search" onSubmit={submitSearch}><Search size={16}/><input placeholder="Search candidates…" value={search} onChange={event=>setSearch(event.target.value)}/></form><span className="topbar-cloud"><span className="status-dot"/>{stagingDemo?'ISOLATED DEMO':'SECURE CLOUD'}</span><Link href="/notifications" className="top-icon" aria-label="Notifications"><Bell size={19}/></Link><Link href="/profile" className="top-avatar">{user.full_name.charAt(0).toUpperCase()}</Link></div>
         </header>
         {user.must_change_password && <div className="password-banner">Your account has a temporary password. Please <Link href="/profile">change your password</Link> before working with records.</div>}
         <div className="content-area">{children}</div>

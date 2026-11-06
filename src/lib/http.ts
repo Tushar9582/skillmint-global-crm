@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
-import { getActor, HttpError, assertSameOrigin, type Actor } from './auth';
+import { getActor, HttpError, assertSameOrigin, isDemoModeRequested, isStagingDemoMode, type Actor } from './auth';
 
 export type Handler = (request: NextRequest, actor: Actor) => Promise<Response>;
 
@@ -12,6 +12,10 @@ export function api(handler: Handler): (request: NextRequest) => Promise<Respons
   return async request => {
     try {
       if (!['GET','HEAD','OPTIONS'].includes(request.method)) assertSameOrigin(request);
+      if (isDemoModeRequested()) {
+        if (!isStagingDemoMode()) throw new HttpError(503,'Isolated demo mode is misconfigured; database APIs are disabled');
+        if (request.method !== 'GET' || request.nextUrl.pathname !== '/api/auth/me') throw new HttpError(404,'Not found');
+      }
       const actor=await getActor();
       if(!actor) throw new HttpError(401,'Please sign in');
       if(actor.must_change_password && request.nextUrl.pathname!=='/api/auth/me')

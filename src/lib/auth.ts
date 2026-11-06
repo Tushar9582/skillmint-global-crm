@@ -1,4 +1,4 @@
-import { randomBytes, createHash } from 'node:crypto';
+import { randomBytes, createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
@@ -27,6 +27,78 @@ export function isDevDemoMode(): boolean {
   return process.env.NODE_ENV === 'development' && process.env.DEV_DEMO_MODE === 'true';
 }
 
+export function isDemoModeRequested(): boolean {
+  return process.env.DEMO_MODE === 'true';
+}
+
+export function isStagingDemoMode(): boolean {
+  const passwordHash = process.env.DEMO_ADMIN_PASSWORD_HASH || '';
+  return process.env.NODE_ENV === 'production' && isDemoModeRequested()
+    && process.env.DEMO_DATA_ISOLATED === 'true'
+    && !process.env.DATABASE_URL && !process.env.NETLIFY_DATABASE_URL
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(process.env.DEMO_ADMIN_EMAIL || '')
+    && /^\$2[aby]\$(1[0-4])\$[./A-Za-z0-9]{53}$/.test(passwordHash)
+    && (process.env.DEMO_SESSION_SECRET || '').length >= 32;
+}
+
+export function demoSessionToken(payload: string, secret: string): string {
+  const signature = createHmac('sha256', secret).update(payload).digest('base64url');
+  return `demo.${payload}.${signature}`;
+}
+
+export function demoSessionPayload(token: string | undefined, secret: string, now = Date.now()): boolean {
+  if (!token || token.length > 1024) return false;
+  const [version, payload, signature, extra] = token.split('.');
+  if (version !== 'demo' || !payload || !signature || extra !== undefined) return false;
+  const expected = createHmac('sha256', secret).update(payload).digest();
+  let actual: Buffer;
+  try { actual = Buffer.from(signature, 'base64url'); } catch { return false; }
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return false;
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { exp?: number; nonce?: string };
+    return Number.isSafeInteger(data.exp) && Number(data.exp) > now && typeof data.nonce === 'string' && data.nonce.length >= 16;
+  } catch { return false; }
+}
+
+export function createDemoSession(response: NextResponse): void {
+  if (!isStagingDemoMode()) throw new HttpError(503, 'Isolated demo login is not configured');
+  const ttl = 8 * 60 * 60;
+  const payload = Buffer.from(JSON.stringify({ exp: Date.now() + ttl * 1000, nonce: randomBytes(24).toString('base64url') })).toString('base64url');
+  response.cookies.set(COOKIE_NAME, demoSessionToken(payload, process.env.DEMO_SESSION_SECRET!), {
+    httpOnly: true, secure: true, sameSite: 'lax', maxAge: ttl, path: '/',
+  });
+}
+
+export function clearSessionCookie(response: NextResponse): void {
+  response.cookies.set(COOKIE_NAME, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 0, path: '/' });
+}
+
+const demoFailures = new Map<string, number[]>();
+const DEMO_FAILURE_LIMIT = 10;
+const DEMO_WINDOW_MS = 15 * 60 * 1000;
+
+export function isDemoLoginRateLimited(keys: string[], now = Date.now()): boolean {
+  return keys.some(key => (demoFailures.get(key) ?? []).filter(time => time > now - DEMO_WINDOW_MS).length >= DEMO_FAILURE_LIMIT);
+}
+
+export function recordDemoLoginFailure(keys: string[], now = Date.now()): void {
+  for (const key of keys) demoFailures.set(key, [...(demoFailures.get(key) ?? []).filter(time => time > now - DEMO_WINDOW_MS), now]);
+  if (demoFailures.size > 2000) {
+    for (const [key, values] of demoFailures) {
+      if (!values.some(time => time > now - DEMO_WINDOW_MS)) demoFailures.delete(key);
+    }
+  }
+}
+
+export function clearDemoLoginFailures(keys: string[]): void {
+  for (const key of keys) demoFailures.delete(key);
+}
+
+export function resolveDemoActor(token: string | undefined, now = Date.now()): Actor | null {
+  if (!isStagingDemoMode() || !demoSessionPayload(token, process.env.DEMO_SESSION_SECRET!, now)) return null;
+  return { ...DEMO_ACTOR, email: process.env.DEMO_ADMIN_EMAIL!, full_name: 'SkillMint Demo Administrator' };
+}
+
 export function hashToken(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -45,7 +117,12 @@ export function normalizePhone(value: string | undefined | null): string | null 
 
 export async function getActor(): Promise<Actor | null> {
   if (isDevDemoMode()) return DEMO_ACTOR;
+  if (isDemoModeRequested()) {
+    if (!isStagingDemoMode()) return null;
+    return resolveDemoActor((await cookies()).get(COOKIE_NAME)?.value);
+  }
   const token = (await cookies()).get(COOKIE_NAME)?.value;
+  if (token?.startsWith('demo.')) return null;
   if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
   return one<Actor>(
     `SELECT u.id,u.organization_id,u.full_name,u.email,u.role,u.active,u.must_change_password
@@ -70,9 +147,11 @@ export async function createSession(userId: string, response: NextResponse): Pro
 }
 
 export async function revokeSession(response: NextResponse): Promise<void> {
+  if (isDemoModeRequested()) { clearSessionCookie(response); return; }
   const token=(await cookies()).get(COOKIE_NAME)?.value;
+  if (token?.startsWith('demo.')) { clearSessionCookie(response); return; }
   if(token) await sql('DELETE FROM sessions WHERE token_hash=$1',[hashToken(token)]);
-  response.cookies.set(COOKIE_NAME,'',{httpOnly:true,path:'/',maxAge:0,sameSite:'lax'});
+  clearSessionCookie(response);
 }
 
 export async function checkPassword(password: string, hash: string): Promise<boolean> {

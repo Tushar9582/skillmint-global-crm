@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "node --env-file=.env --import tsx scripts/migrate.ts",
     "db:seed": "node --env-file=.env --import tsx scripts/seed-admin.ts",
+    "demo:hash-password": "node --import tsx scripts/hash-demo-password.ts",
     "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {

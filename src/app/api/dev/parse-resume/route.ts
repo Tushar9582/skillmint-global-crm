@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { assertSameOrigin, HttpError, isDevDemoMode } from '@/lib/auth';
+import { assertSameOrigin, HttpError, isDevDemoMode, isDemoModeRequested, isStagingDemoMode } from '@/lib/auth';
 import { extractText, parseResume, sha256, validateResume } from '@/lib/resume';
 
 /** Local-only parser used by the browser demo store. It deliberately has no DB or storage dependency. */
 export async function POST(request:NextRequest) {
   try {
-    if(!isDevDemoMode()) return NextResponse.json({error:'Not found'},{status:404});
+    if(!isDevDemoMode() && !(isDemoModeRequested() && isStagingDemoMode())) return NextResponse.json({error:'Not found'},{status:404});
     assertSameOrigin(request);
     const form=await request.formData();
     const file=form.get('file');

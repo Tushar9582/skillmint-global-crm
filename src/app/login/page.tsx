@@ -3,7 +3,8 @@
 import { FormEvent, useState } from 'react';
 import { Eye, EyeOff, LockKeyhole, Mail, ArrowRight, UsersRound, ChartNoAxesCombined } from 'lucide-react';
 
-const demo=process.env.NODE_ENV==='development' && process.env.NEXT_PUBLIC_DEV_DEMO_MODE==='true';
+const localDemo=process.env.NODE_ENV==='development' && process.env.NEXT_PUBLIC_DEV_DEMO_MODE==='true';
+const stagingDemo=process.env.NODE_ENV==='production' && process.env.NEXT_PUBLIC_DEMO_MODE==='true';
 
 export default function LoginPage() {
   const [email,setEmail]=useState('');
@@ -42,7 +43,8 @@ export default function LoginPage() {
         <p className="eyebrow">WELCOME BACK</p>
         <h2>Sign in to SkillMint</h2>
         <p className="muted">Access your secure recruitment workspace.</p>
-        {demo ? <div className="login-form"><div className="alert"><b>Development Mode</b><br/>Authentication is bypassed locally. Changes are saved only in this browser.</div><button className="btn primary full" type="button" onClick={()=>window.location.assign('/dashboard')}>Enter CRM Dashboard <ArrowRight size={16}/></button><div className="login-help"><b>Demo Admin Login</b><br/>Email: {process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL}<br/>Password: {process.env.NEXT_PUBLIC_DEMO_ADMIN_PASSWORD}<br/><small>Shown for UI testing only; no database account is created.</small></div></div> : <form onSubmit={submit} className="login-form">
+        {localDemo ? <div className="login-form"><div className="alert"><b>Development Mode</b><br/>Authentication is bypassed locally. Changes are saved only in this browser.</div><button className="btn primary full" type="button" onClick={()=>window.location.assign('/dashboard')}>Enter CRM Dashboard <ArrowRight size={16}/></button></div> : <form onSubmit={submit} className="login-form">
+          {stagingDemo && <div className="alert"><b>Isolated Demo / Staging</b><br/>Sign in with the temporary demo account. All records are simulated in this browser; production database APIs are disabled.</div>}
           <label>Work Email Address<div className="input-icon"><Mail size={18}/><input value={email} onChange={e=>setEmail(e.target.value)} type="email" autoComplete="username" placeholder="you@skillmintglobal.com" required/></div></label>
           <label>Password<div className="input-icon"><LockKeyhole size={18}/><input value={password} onChange={e=>setPassword(e.target.value)} type={show?'text':'password'} autoComplete="current-password" placeholder="Your password" required/><button type="button" className="icon-only" onClick={()=>setShow(!show)} aria-label="Show password">{show?<EyeOff size={18}/>:<Eye size={18}/>}</button></div></label>
           {error && <div className="alert danger" role="alert">{error}</div>}

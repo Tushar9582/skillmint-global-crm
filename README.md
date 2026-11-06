@@ -118,6 +118,23 @@ Copy-Item .env.example .env
 | `/audit` | Admin audit trail |
 | `/profile` | Profile and password update |
 
+## Temporary Netlify Demo / Staging Login
+
+Use a **separate Netlify site** and branch for this temporary demo. The weak temporary password is accepted only when the app is in production mode, `DEMO_MODE=true`, `DEMO_DATA_ISOLATED=true`, both `DATABASE_URL` and `NETLIFY_DATABASE_URL` are absent, and the server-only credentials and session secret are valid. If any condition fails, demo login is unavailable and database-backed APIs fail closed. Do not copy these settings to the production CRM site.
+
+Set these variables in the staging site's Netlify environment (not in `NEXT_PUBLIC_*`):
+
+- `DEMO_MODE=true`
+- `DEMO_DATA_ISOLATED=true`
+- `DEMO_ADMIN_EMAIL=skillmint@gmail.com`
+- `DEMO_ADMIN_PASSWORD_HASH=<bcrypt hash of the temporary password>`
+- `DEMO_SESSION_SECRET=<random secret of at least 32 characters>`
+- Leave `DATABASE_URL` and `NETLIFY_DATABASE_URL` unset on this site.
+
+Generate the password hash locally with `npm run demo:hash-password`; enter the temporary password at the hidden prompt and copy only the resulting bcrypt hash into Netlify. Generate a session secret with a secure random generator (at least 32 random bytes). Redeploy after setting or changing environment variables. Demo sessions are signed, HttpOnly, Secure, SameSite=Lax cookies and expire after eight hours. Login failures are rate-limited per IP and email/IP pair.
+
+The demo site stores simulated records only in browser storage. Its `/api/v1/*` database APIs are disabled, and the standard database-backed login path is never used while `DEMO_MODE` is requested. Resume parsing remains available locally in memory. Logout clears the demo session. Disable the demo by removing `DEMO_MODE` and redeploying, then delete the temporary site and revoke its session secret/hash.
+
 ## Cloud deployment (DigitalOcean)
 
 DigitalOcean is a supported choice for 10–30 employees. A typical production topology is:

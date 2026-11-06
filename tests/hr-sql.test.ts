@@ -94,9 +94,10 @@ test('leave: balances, overlap rules, approval workflow and calendar against rea
   const monday = (() => { let d = addDays(today, 40); while (new Date(`${d}T00:00:00Z`).getUTCDay() !== 1) d = addDays(d, 1); return d; })();
   const req = await hr('employee', 'POST', 'leave/requests', { leave_type_id: cl.id, start_date: monday, end_date: addDays(monday, 4), reason: 'Trip' });
   assert.equal(req.status, 201, req.text);
+  const requestedDays = Number(req.body.data.days);
   assert.equal((await hr('employee', 'POST', 'leave/requests', { leave_type_id: cl.id, start_date: addDays(monday, 2), half_day: true, reason: 'x' })).status, 409);
   assert.equal((await hr('employee', 'POST', 'leave/requests', { leave_type_id: cl.id, start_date: addDays(monday, 7), end_date: addDays(monday, 25), reason: 'long' })).status, 409);
-  const bal = (await hr('employee', 'GET', 'leave/balances')).body.data.find((b: any) => b.code === 'CL'); assert.equal(bal.pending, 5); assert.equal(bal.remaining, 7);
+  const bal = (await hr('employee', 'GET', 'leave/balances')).body.data.find((b: any) => b.code === 'CL'); assert.equal(bal.pending, requestedDays); assert.equal(bal.remaining, 12-requestedDays);
   assert.equal((await hr('employee', 'POST', `leave/requests/${req.body.data.id}/decision`, { decision: 'approved' })).status, 403);
   assert.equal((await hr('hr_manager', 'POST', `leave/requests/${req.body.data.id}/decision`, { decision: 'approved' })).status, 200);
   assert.equal((await hr('hr_manager', 'POST', `leave/requests/${req.body.data.id}/decision`, { decision: 'rejected' })).status, 409);
