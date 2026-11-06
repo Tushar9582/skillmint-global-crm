@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { POST as login } from '../src/app/api/auth/login/route';
 import { POST as logout } from '../src/app/api/auth/logout/route';
 import { api } from '../src/lib/http';
-import { isDemoModeRequested, isDevDemoMode, isStagingDemoMode, resolveDemoActor } from '../src/lib/auth';
+import { getActor, isDemoModeRequested, isDevDemoMode, isPublicDemoMode, isStagingDemoMode, resolveDemoActor } from '../src/lib/auth';
 
 const password = randomBytes(24).toString('base64url');
 const secret = 'local-test-secret-0123456789-abcdef';
@@ -14,6 +14,7 @@ let hash = '';
 const original = {
   nodeEnv: process.env.NODE_ENV,
   demoMode: process.env.DEMO_MODE,
+  publicPreview: process.env.DEMO_PUBLIC_PREVIEW,
   isolated: process.env.DEMO_DATA_ISOLATED,
   databaseUrl: process.env.DATABASE_URL,
   netlifyDatabaseUrl: process.env.NETLIFY_DATABASE_URL,
@@ -27,6 +28,7 @@ function configureStaging() {
   Reflect.set(process.env, 'NODE_ENV', 'production');
   process.env.DEMO_MODE = 'true';
   process.env.DEMO_DATA_ISOLATED = 'true';
+  delete process.env.DEMO_PUBLIC_PREVIEW;
   delete process.env.DATABASE_URL;
   delete process.env.NETLIFY_DATABASE_URL;
   process.env.DEMO_ADMIN_EMAIL = 'skillmint@gmail.com';
@@ -105,9 +107,37 @@ test('normal production authentication remains separate and localhost bypass is 
   assert.equal(isDevDemoMode(), true); assert.equal(isStagingDemoMode(), false);
 });
 
+test('explicit public demo opens directly without a session and never touches database APIs', async () => {
+  configureStaging();
+  process.env.DEMO_PUBLIC_PREVIEW = 'true';
+  delete process.env.DEMO_ADMIN_PASSWORD_HASH;
+  delete process.env.DEMO_SESSION_SECRET;
+  assert.equal(isPublicDemoMode(), true);
+  assert.equal(isStagingDemoMode(), true);
+  const actor = await getActor();
+  assert.equal(actor?.role, 'admin');
+  assert.equal(actor?.email, 'demo@skillmint.local');
+  const protectedHandler = api(async () => NextResponse.json({ leaked: true }));
+  const blocked = await protectedHandler(request('https://staging.example.net/api/v1/candidates', 'GET'));
+  assert.equal(blocked.status, 404);
+});
+
+test('public demo fails closed if cloud credentials exist or the preview flag is removed', async () => {
+  process.env.DATABASE_URL = 'postgres://real.invalid/prod';
+  assert.equal(isPublicDemoMode(), false);
+  assert.equal(isStagingDemoMode(), false);
+  assert.equal(await getActor(), null);
+  delete process.env.DATABASE_URL;
+  delete process.env.DEMO_PUBLIC_PREVIEW;
+  assert.equal(isPublicDemoMode(), false);
+  assert.equal(isStagingDemoMode(), false);
+  assert.equal(await getActor(), null);
+});
+
 test('restore environment after the test file', () => {
   for (const [key, value] of Object.entries({
     NODE_ENV: original.nodeEnv, DEMO_MODE: original.demoMode, DEMO_DATA_ISOLATED: original.isolated,
+    DEMO_PUBLIC_PREVIEW: original.publicPreview,
     DATABASE_URL: original.databaseUrl, NETLIFY_DATABASE_URL: original.netlifyDatabaseUrl,
     DEMO_ADMIN_EMAIL: original.adminEmail, DEMO_ADMIN_PASSWORD_HASH: original.adminHash,
     DEMO_SESSION_SECRET: original.sessionSecret, APP_ORIGIN: original.appOrigin, DEV_DEMO_MODE: original.devDemo,
