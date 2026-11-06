@@ -1,10 +1,12 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import { redirect } from 'next/navigation';
 import { Eye, EyeOff, LockKeyhole, Mail, ArrowRight, UsersRound, ChartNoAxesCombined } from 'lucide-react';
 
 const localDemo=process.env.NODE_ENV==='development' && process.env.NEXT_PUBLIC_DEV_DEMO_MODE==='true';
 const stagingDemo=process.env.NODE_ENV==='production' && process.env.NEXT_PUBLIC_DEMO_MODE==='true';
+const directDemo=localDemo || process.env.NEXT_PUBLIC_DEMO_AUTO_ACCESS==='true';
 
 export default function LoginPage() {
   const [email,setEmail]=useState('');
@@ -12,6 +14,8 @@ export default function LoginPage() {
   const [show,setShow]=useState(false);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
+  // A preview has no login screen: opening /login goes straight to the dashboard.
+  if(directDemo) redirect('/dashboard');
   async function submit(event:FormEvent) {
     event.preventDefault();setBusy(true);setError('');
     try {
