@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
     return [{ source: '/resume-upload', destination: '/candidates?mode=resume', permanent: false }];
   },
   env: {
+    NEXT_PUBLIC_DEMO_AUTO_ACCESS: process.env.NODE_ENV === 'production' && process.env.DEMO_MODE === 'true'
+      && process.env.DEMO_DATA_ISOLATED === 'true' && process.env.DEMO_PUBLIC_PREVIEW === 'true'
+      && !process.env.DATABASE_URL && !process.env.NETLIFY_DATABASE_URL ? 'true' : 'false',
     NEXT_PUBLIC_DEV_DEMO_MODE: process.env.NODE_ENV === 'development' && process.env.DEV_DEMO_MODE === 'true' ? 'true' : 'false',
     NEXT_PUBLIC_DEMO_MODE: process.env.NODE_ENV === 'production' && process.env.DEMO_MODE === 'true'
       && process.env.DEMO_DATA_ISOLATED === 'true' && !process.env.DATABASE_URL && !process.env.NETLIFY_DATABASE_URL ? 'true' : 'false',
