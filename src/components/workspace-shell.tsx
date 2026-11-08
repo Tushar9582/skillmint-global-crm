@@ -17,8 +17,20 @@ export function useCurrentUser(){const user=useContext(CurrentUserContext);if(!u
 
 type NavItem={href:string;label:string;icon:LucideIcon;group:string;perms?:string[];adminOnly?:boolean};
 const CRM='Recruitment CRM',HR='Human Resources',FIN='Finance & Billing',REPORTS='Reports & Analytics';
+type WorkspaceMode='choose'|'hrms'|'crm';
+const HR_ROUTES=new Set(['/hrms-dashboard','/hr-employees','/my-attendance','/attendance-register','/shifts','/leave','/overtime','/holidays','/payroll','/my-payslips','/analytics','/permissions']);
+const CRM_ROUTES=new Set(['/leads-dashboard','/company-leads','/clients','/candidates','/jobs','/applications','/interviews','/followups','/activities','/employees','/handover','/duplicate-reviews','/imports','/crm-settings','/reports','/billing','/audit','/daily-report']);
+const SHARED_ROUTES=new Set(['/notifications','/profile']);
+function workspaceFromPath(path:string):WorkspaceMode|null {
+  if(path==='/dashboard')return 'choose';
+  if(HR_ROUTES.has(path))return 'hrms';
+  if(CRM_ROUTES.has(path))return 'crm';
+  return null;
+}
 const allItems:NavItem[]=[
-  {href:'/dashboard',label:'Dashboard',icon:LayoutDashboard,group:'Overview'},
+  {href:'/dashboard',label:'Choose Workspace',icon:LayoutDashboard,group:'Overview'},
+  {href:'/hrms-dashboard',label:'HRMS Dashboard',icon:LayoutDashboard,group:'Overview'},
+  {href:'/leads-dashboard',label:'Lead Dashboard',icon:LayoutDashboard,group:'Overview'},
   {href:'/company-leads',label:'Company Leads',icon:BriefcaseBusiness,group:CRM},
   {href:'/clients',label:'Clients & Contacts',icon:FolderHeart,group:CRM},
   {href:'/candidates',label:'Candidates & Resume Bank',icon:Users,group:CRM},
@@ -58,6 +70,10 @@ export function WorkspaceShell({user:serverUser,children}:{user:CurrentUser;chil
   const [search,setSearch]=useState('');
   const [loggingOut,setLoggingOut]=useState(false);
   const [collapsed,setCollapsed]=useState<Record<string,boolean>>({});
+  const [lastWorkspace,setLastWorkspace]=useState<WorkspaceMode>(()=>workspaceFromPath(pathname)??'choose');
+  const detectedWorkspace=workspaceFromPath(pathname);
+  const workspace=detectedWorkspace??lastWorkspace;
+  useEffect(()=>{if(detectedWorkspace)setLastWorkspace(detectedWorkspace);},[detectedWorkspace]);
   const demo=process.env.NODE_ENV==='development' && process.env.NEXT_PUBLIC_DEV_DEMO_MODE==='true';
   const stagingDemo=process.env.NODE_ENV==='production' && process.env.NEXT_PUBLIC_DEMO_MODE==='true';
   const directDemo=demo || process.env.NEXT_PUBLIC_DEMO_AUTO_ACCESS==='true';
@@ -66,16 +82,19 @@ export function WorkspaceShell({user:serverUser,children}:{user:CurrentUser;chil
   if(demo&&!demoRole)return null;
   const person=demo&&demoRole?DEMO_PEOPLE[demoRole]:null;
   const user:CurrentUser=person?{id:person.id,full_name:person.full_name,email:person.email,role:person.role,must_change_password:false}:serverUser;
-  const nav=allItems.filter(item=>(!item.adminOnly||user.role==='admin')&&(!item.perms||canAny(user.role,item.perms)));
+  const nav=allItems.filter(item=>(!item.adminOnly||user.role==='admin')&&(!item.perms||canAny(user.role,item.perms))
+    && (SHARED_ROUTES.has(item.href) || (workspace==='choose' ? item.href==='/dashboard' : workspace==='hrms' ? HR_ROUTES.has(item.href) : CRM_ROUTES.has(item.href))));
   let lastGroup='';
   function submitSearch(event:FormEvent) {event.preventDefault();if(search.trim())router.push(`/candidates?q=${encodeURIComponent(search.trim())}`);}
   async function logout() {if(demo){window.location.href='/login';return;}setLoggingOut(true);await fetch('/api/auth/logout',{method:'POST'});window.location.href='/login';}
-  const page=nav.find(item=>item.href===pathname)?.label || 'Workspace';
+  const page=allItems.find(item=>item.href===pathname)?.label || 'Workspace';
   return <CurrentUserContext.Provider value={user}>
     <div className="app-frame">
       {open&&<button className="mobile-backdrop" onClick={()=>setOpen(false)} aria-label="Close navigation"/>}
       <aside className={`sidebar ${open?'sidebar-open':''}`}>
         <div className="sidebar-brand brand white"><img className="brand-mark brand-logo" src="/brand/skillmint-global-mark.png" alt="SkillMint Global logo"/><span><strong>skillmint</strong><small>G L O B A L</small></span><button className="sidebar-close" onClick={()=>setOpen(false)} aria-label="Close"><X size={20}/></button></div>
+        <Link href="/dashboard" onClick={()=>setOpen(false)} className="workspace-switch"><LayoutDashboard size={18}/><span>{workspace==='choose'?'Workspace Home':'Switch Workspace'}</span><span className="workspace-switch-arrow">↗</span></Link>
+        {workspace!=='choose'&&<div className="sidebar-workspace-label">{workspace==='hrms'?'HRMS & People':'Lead Management'}<small>{workspace==='hrms'?'People, attendance & payroll':'Recruitment & client pipeline'}</small></div>}
         <nav className="nav-scroll" aria-label="CRM navigation">
           {nav.map(item=>{
             const label=lastGroup!==item.group?item.group:null;
@@ -92,8 +111,8 @@ export function WorkspaceShell({user:serverUser,children}:{user:CurrentUser;chil
         </div>
       </aside>
       <div className="workspace-main">
-        <header className="topbar"><div className="topbar-leading"><button className="mobile-menu" onClick={()=>setOpen(true)} aria-label="Open menu"><Menu size={22}/></button><div className="breadcrumbs">Workspace <span>/</span><b>{page}</b></div></div>
-          <div className="topbar-actions"><form className="global-search" onSubmit={submitSearch}><Search size={16}/><input placeholder="Search candidates…" value={search} onChange={event=>setSearch(event.target.value)}/></form><span className="topbar-cloud"><span className="status-dot"/>{stagingDemo?'ISOLATED DEMO':'SECURE CLOUD'}</span><Link href="/notifications" className="top-icon" aria-label="Notifications"><Bell size={19}/></Link><Link href="/profile" className="top-avatar">{user.full_name.charAt(0).toUpperCase()}</Link></div>
+        <header className="topbar"><div className="topbar-leading"><button className="mobile-menu" onClick={()=>setOpen(true)} aria-label="Open menu"><Menu size={22}/></button><div className="breadcrumbs"><Link href="/dashboard">Workspaces</Link><span>/</span><b>{page}</b></div></div>
+<div className="topbar-actions">{workspace==='crm'&&<form className="global-search" onSubmit={submitSearch}><Search size={16}/><input placeholder="Search candidates…" value={search} onChange={event=>setSearch(event.target.value)}/></form>}<span className="topbar-cloud"><span className="status-dot"/>{demo?'LOCAL DEMO':stagingDemo?'ISOLATED DEMO':'SECURE CLOUD'}</span><Link href="/notifications" className="top-icon" aria-label="Notifications"><Bell size={19}/></Link><Link href="/profile" className="top-avatar">{user.full_name.charAt(0).toUpperCase()}</Link></div>
         </header>
         {user.must_change_password && <div className="password-banner">Your account has a temporary password. Please <Link href="/profile">change your password</Link> before working with records.</div>}
         <div className="content-area">{children}</div>

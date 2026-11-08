@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CalendarClock, CircleAlert, BriefcaseBusiness, Users, Layers3, CheckCircle2, Plus, ChevronRight, Fingerprint, Wallet, ReceiptText } from 'lucide-react';
+import { ArrowRight, CalendarClock, CircleAlert, BriefcaseBusiness, Users, Layers3, CheckCircle2, Plus, ChevronRight, Fingerprint, Wallet, ReceiptText, IdCard, CalendarCheck, Plane, Timer, CalendarDays, Clock3, FileText, UserRoundCog, ShieldCheck, BarChart3, Sparkles, LockKeyhole, type LucideIcon } from 'lucide-react';
 import { requestJson, formatDate } from '@/lib/client-api';
 import { Badge, fmtTime, money, useApi, useCan } from './hr/ui';
 import { useCurrentUser } from './workspace-shell';
@@ -41,30 +41,40 @@ function HrSection() {
     </div></>;
 }
 
-function FinanceSection() {
+function FinanceSection({mode}:{mode:'hrms'|'crm'}) {
   const can=useCan();
-  const payroll=useApi<{data:{latest:{period_year:number;period_month:number;status:string;employee_count:number;total_net:number}|null;open_runs:number;without_structure:number}}>(can('payroll.view_all')?'/api/v1/payroll/dashboard':null);
-  const billing=useApi<{data:{summary:{outstanding:number;overdue_amount:number;overdue_count:number;open_invoices:number}}}>(can('billing.view')?'/api/v1/finance/reports':null);
-  if(!can('payroll.view_all')&&!can('billing.view'))return null;
+  const payroll=useApi<{data:{latest:{period_year:number;period_month:number;status:string;employee_count:number;total_net:number}|null;open_runs:number;without_structure:number}}>(mode==='hrms'&&can('payroll.view_all')?'/api/v1/payroll/dashboard':null);
+  const billing=useApi<{data:{summary:{outstanding:number;overdue_amount:number;overdue_count:number;open_invoices:number}}}>(mode==='crm'&&can('billing.view')?'/api/v1/finance/reports':null);
+  if(mode==='hrms'&&!can('payroll.view_all')||mode==='crm'&&!can('billing.view'))return null;
   const p=payroll.data?.data;const b=billing.data?.data.summary;
-  return <><div className="panel-header" style={{padding:'4px 2px'}}><div><h2>Finance & Billing</h2><p>Payroll status and client receivables</p></div></div>
+  return <><div className="panel-header" style={{padding:'4px 2px'}}><div><h2>{mode==='hrms'?'Payroll & Compensation':'Client Billing & Payments'}</h2><p>{mode==='hrms'?'Staff salary runs and payslips':'Invoice status and client receivables'}</p></div></div>
     <div className="metric-grid">
-      {can('payroll.view_all')&&<Metric title="Payroll Summary" value={p?(p.latest?money(p.latest.total_net):'No runs'):'—'} note={p?.latest?`${MONTHS[p.latest.period_month-1]} ${p.latest.period_year} · ${p.latest.employee_count} employees · ${p.latest.status}`:'Net pay of the latest run'} icon={Wallet} href="/payroll"/>}
-      {can('payroll.view_all')&&<Metric title="Payroll Runs Open" value={p?p.open_runs:'—'} note={p&&p.without_structure?`${p.without_structure} employees lack a salary structure`:'Awaiting approval or finalization'} icon={Wallet} href="/payroll"/>}
-      {can('billing.view')&&<Metric title="Client Outstanding Payments" value={b?money(b.outstanding):'—'} note={b?`${b.open_invoices} open invoices`:'Unpaid balances'} icon={ReceiptText} href="/billing"/>}
-      {can('billing.view')&&<Metric title="Overdue Receivables" value={b?money(b.overdue_amount):'—'} note={b?`${b.overdue_count} overdue invoices`:'Past due date'} icon={CircleAlert} href="/billing"/>}
+      {mode==='hrms'&&<Metric title="Payroll Summary" value={p?(p.latest?money(p.latest.total_net):'No runs'):'—'} note={p?.latest?`${MONTHS[p.latest.period_month-1]} ${p.latest.period_year} · ${p.latest.employee_count} employees · ${p.latest.status}`:'Net pay of the latest run'} icon={Wallet} href="/payroll"/>}
+      {mode==='hrms'&&<Metric title="Payroll Runs Open" value={p?p.open_runs:'—'} note={p&&p.without_structure?`${p.without_structure} employees lack a salary structure`:'Awaiting approval or finalization'} icon={Wallet} href="/payroll"/>}
+      {mode==='crm'&&<Metric title="Client Outstanding Payments" value={b?money(b.outstanding):'—'} note={b?`${b.open_invoices} open invoices`:'Unpaid balances'} icon={ReceiptText} href="/billing"/>}
+      {mode==='crm'&&<Metric title="Overdue Receivables" value={b?money(b.overdue_amount):'—'} note={b?`${b.overdue_count} overdue invoices`:'Past due date'} icon={CircleAlert} href="/billing"/>}
     </div></>;
 }
 
 function MyDay() {
   const me=useApi<{data:{record:Record<string,unknown>|null;punched_in:boolean;timezone:string}}>('/api/v1/hr/attendance/me');
+  const [busy,setBusy]=useState(false);
+  const [error,setError]=useState('');
+  const [message,setMessage]=useState('');
   const d=me.data?.data;
-  return <Link href="/my-attendance" className="panel" style={{display:'flex',alignItems:'center',gap:16,padding:'16px 22px'}}><span className="metric-icon"><Fingerprint size={20}/></span>
-    <div style={{flex:1}}><b>My attendance today</b><p className="muted" style={{margin:0}}>{!d?'Loading…':d.record?`In ${fmtTime(d.record.punch_in,d.timezone)}${d.record.punch_out?` · Out ${fmtTime(d.record.punch_out,d.timezone)}`:' · still on duty'}`:'You have not punched in yet'}</p></div>
-    {d?.record?<Badge value={d.record.status}/>:<span className="btn primary small">Punch In <ArrowRight size={14}/></span>}</Link>;
+  async function punch(action:'in'|'out') {
+    setBusy(true);setError('');setMessage('');
+    try {const result=await requestJson<{message?:string}>('/api/v1/hr/attendance/punch',{method:'POST',body:JSON.stringify({action})});setMessage(result.message||'Attendance updated');me.reload();}
+    catch(err){setError(err instanceof Error?err.message:'Unable to update attendance');}
+    finally{setBusy(false);}
+  }
+  return <div className="panel myday-panel"><span className="metric-icon"><Fingerprint size={22}/></span>
+    <div className="myday-copy"><b>My attendance today</b><p className="muted">{!d?'Loading…':d.record?`In ${fmtTime(d.record.punch_in,d.timezone)}${d.record.punch_out?` · Out ${fmtTime(d.record.punch_out,d.timezone)}`:' · still on duty'}`:'You have not punched in yet'}</p>{message&&<small className="myday-success" role="status">{message}</small>}{(error||me.error)&&<small className="myday-error" role="alert">{error||me.error}</small>}</div>
+    <div className="myday-actions">{d?.record?.punch_out?<Badge value={d.record.status}/>:<button type="button" className={`btn ${d?.punched_in?'ghost':'primary'} small`} disabled={busy||!d} onClick={()=>void punch(d?.punched_in?'out':'in')}>{busy?'Saving…':d?.punched_in?'Punch Out':'Punch In'} <ArrowRight size={14}/></button>}<Link href="/my-attendance" className="btn ghost small">View Details</Link></div>
+  </div>;
 }
 
-export function DashboardView(){
+function LeadDashboard(){
   const user=useCurrentUser();
   const [data,setData]=useState<Dashboard|null>(null);
   const [error,setError]=useState('');
@@ -76,18 +86,16 @@ export function DashboardView(){
     {title:'Joined / Placements',value:data?.placements,icon:CheckCircle2,note:'Successful hires'},
   ];
   return <div className="page-shell">
-    <div className="page-heading"><div><p className="eyebrow">SKILLMINT / WORKSPACE</p><h1>{user.role==='admin'?'Good morning':'Welcome back'}, {user.full_name.split(' ')[0]}</h1><p>Recruitment, people and finance in one workspace.</p></div><Link className="btn primary" href="/company-leads?new=1"><Plus size={16}/> Add Lead</Link></div>
+    <div className="page-heading module-page-heading"><div><p className="eyebrow">SKILLMINT / LEAD MANAGEMENT</p><h1>Lead Management Dashboard</h1><p>Manage employer relationships, candidate pipelines and daily recruitment work.</p></div><Link className="btn primary" href="/company-leads?new=1"><Plus size={16}/> Add Company Lead</Link></div>
     {error&&<div className="alert danger">{error}</div>}
-    <MyDay/>
-    <HrSection/>
-    <FinanceSection/>
+    <ModuleLinks mode="crm"/>
     <div className="panel-header" style={{padding:'4px 2px'}}><div><h2>Recruitment CRM</h2><p>Your pipeline and work priorities</p></div></div>
-    <div className="metric-grid">{metrics.map(item=>{const Icon=item.icon;return <div className="metric-card" key={item.title}><div className="metric-label"><span>{item.title}</span><span className="metric-icon"><Icon size={18}/></span></div><div className="metric-number">{data?item.value:'—'}</div><p>{item.note}</p></div>;})}</div>
+    <div className="metric-grid">{metrics.map((item,index)=><Metric key={item.title} title={item.title} value={data?item.value:'—'} note={item.note} icon={item.icon} href={['/company-leads','/candidates','/jobs','/applications'][index]}/>)}</div>
     <div className="metric-grid secondary-metrics">
-      <div className="mini-metric"><CalendarClock size={19}/><span>Pending Follow-ups (due today)</span><strong>{data?.followups_due??'—'}</strong></div>
-      <div className="mini-metric warn"><CircleAlert size={19}/><span>Overdue Follow-ups</span><strong>{data?.overdue??'—'}</strong></div>
-      <div className="mini-metric"><CalendarClock size={19}/><span>Interviews Today</span><strong>{data?.interviews_today??'—'}</strong></div>
-      <div className="mini-metric"><Users size={19}/><span>Applications</span><strong>{data?.applications??'—'}</strong></div>
+      <Mini icon={CalendarClock} label="Follow-ups Due Today" value={data?.followups_due??'—'} href="/followups"/>
+      <Mini icon={CircleAlert} label="Overdue Follow-ups" value={data?.overdue??'—'} href="/followups" warn/>
+      <Mini icon={CalendarClock} label="Interviews Today" value={data?.interviews_today??'—'} href="/interviews"/>
+      <Mini icon={Users} label="Applications" value={data?.applications??'—'} href="/applications"/>
     </div>
     <div className="dashboard-grid">
       <div className="panel"><div className="panel-header"><div><h2>My Priority Queue</h2><p>Due work sorted by deadline</p></div><Link href="/followups" className="text-link">All follow-ups <ArrowRight size={15}/></Link></div>
@@ -98,12 +106,81 @@ export function DashboardView(){
           <Link href="/company-leads?new=1"><BriefcaseBusiness size={20}/><div><b>Create company lead</b><small>Register employer prospect</small></div><ChevronRight size={16}/></Link>
           <Link href="/candidates?mode=resume"><Users size={20}/><div><b>Upload candidate resume</b><small>Extract information and create lead</small></div><ChevronRight size={16}/></Link>
           <Link href="/followups?new=1"><CalendarClock size={20}/><div><b>Schedule a follow-up</b><small>Track your next contact</small></div><ChevronRight size={16}/></Link>
-          <Link href="/leave"><CalendarClock size={20}/><div><b>Apply for leave</b><small>Check balances and request time off</small></div><ChevronRight size={16}/></Link>
           <Link href="/daily-report"><CheckCircle2 size={20}/><div><b>Submit daily report</b><small>Automatically verified progress</small></div><ChevronRight size={16}/></Link>
         </div>
       </div>
     </div>
     {user.role==='admin' && <div className="dashboard-grid lower-panels"><div className="panel"><div className="panel-header"><h2>Requires Attention</h2></div><div className="attention-row"><CircleAlert size={18}/><span>Potential duplicate resumes</span><Link href="/duplicate-reviews">{data?.exceptions?.duplicate_reviews??'—'} to review</Link></div><div className="attention-row"><CircleAlert size={18}/><span>Unassigned company leads</span><Link href="/company-leads">{data?.exceptions?.unassigned_leads??'—'} records</Link></div></div>
       <div className="panel"><div className="panel-header"><h2>Recent Activity</h2></div><div className="activity-small">{data?.latest?.length?data.latest.slice(0,5).map((x,i)=><div key={String(x.id||i)}><span>{String(x.actor_name||'Recruiter')}</span><b>{String(x.action||x.outcome||'Activity')}</b><small>{formatDate(x.created_at,true)}</small></div>):<p className="muted">No recent activity yet.</p>}</div></div></div>}
+    <FinanceSection mode="crm"/>
   </div>;
+}
+
+type WorkspaceMode='hrms'|'crm';
+type ModuleLink={href:string;title:string;detail:string;icon:LucideIcon;permission?:string;adminOnly?:boolean};
+const hrmsLinks:ModuleLink[]=[
+  {href:'/hr-employees',title:'Employee Directory',detail:'Staff records and profiles',icon:IdCard,permission:'employees.view'},
+  {href:'/my-attendance',title:'My Attendance',detail:'Punch in, punch out and history',icon:Fingerprint},
+  {href:'/attendance-register',title:'Attendance Register',detail:'Team attendance and corrections',icon:CalendarCheck,permission:'attendance.view_all'},
+  {href:'/shifts',title:'Shift Scheduling',detail:'Create shifts and assign rosters',icon:Clock3,permission:'shifts.manage'},
+  {href:'/leave',title:'Leave Management',detail:'Requests, balances and approvals',icon:Plane},
+  {href:'/overtime',title:'Overtime',detail:'Extra hours and approvals',icon:Timer},
+  {href:'/holidays',title:'Holiday Calendar',detail:'Company holidays and time off',icon:CalendarDays},
+  {href:'/payroll',title:'Payroll',detail:'Monthly salary processing',icon:Wallet,permission:'payroll.view_all'},
+  {href:'/my-payslips',title:'My Payslips',detail:'View your salary statements',icon:ReceiptText},
+  {href:'/analytics',title:'HR Analytics',detail:'Workforce performance reports',icon:BarChart3,permission:'hr.reports'},
+];
+const crmLinks:ModuleLink[]=[
+  {href:'/company-leads',title:'Company Leads',detail:'Employer prospects and deals',icon:BriefcaseBusiness},
+  {href:'/clients',title:'Clients & Contacts',detail:'Manage employer relationships',icon:Users},
+  {href:'/candidates',title:'Candidates & Resumes',detail:'Manual leads and resume upload',icon:IdCard},
+  {href:'/jobs',title:'Job Requisitions',detail:'Open hiring requirements',icon:Layers3},
+  {href:'/applications',title:'Applications',detail:'Candidate stages and placements',icon:FileText},
+  {href:'/interviews',title:'Interviews',detail:'Schedules and feedback',icon:CalendarDays},
+  {href:'/followups',title:'Follow-up Center',detail:'Tasks, reminders and calls',icon:Clock3},
+  {href:'/activities',title:'Activity History',detail:'Timeline of lead interactions',icon:CheckCircle2},
+  {href:'/daily-report',title:'Daily Report',detail:'Track your daily work',icon:BarChart3},
+  {href:'/employees',title:'CRM Team Access',detail:'Recruiters and lead allocation',icon:UserRoundCog,adminOnly:true},
+  {href:'/handover',title:'Employee Handover',detail:'Reassign work when staff leave',icon:ArrowRight,adminOnly:true},
+  {href:'/duplicate-reviews',title:'Duplicate Reviews',detail:'Check repeated resume records',icon:ShieldCheck,adminOnly:true},
+];
+
+function ModuleLinks({mode}:{mode:WorkspaceMode}) {
+  const user=useCurrentUser();
+  const can=useCan();
+  const links=(mode==='hrms'?hrmsLinks:crmLinks).filter(link=>(!link.adminOnly||user.role==='admin')&&(!link.permission||can(link.permission)));
+  return <section className="module-directory" aria-label={mode==='hrms'?'HRMS modules':'Lead management modules'}>
+    <div className="module-section-heading"><div><span className="eyebrow">QUICK ACCESS</span><h2>{mode==='hrms'?'HRMS Modules':'Recruitment Modules'}</h2><p>Open any workspace tool directly. Your existing records and forms stay connected.</p></div></div>
+    <div className="module-directory-grid">{links.map(item=>{const Icon=item.icon;return <Link href={item.href} key={item.href} className="module-link-card"><span className="module-link-icon"><Icon size={22}/></span><span className="module-link-copy"><strong>{item.title}</strong><small>{item.detail}</small></span><ChevronRight size={18} className="module-link-arrow"/></Link>;})}</div>
+  </section>;
+}
+
+function HrmsDashboard() {
+  const user=useCurrentUser();
+  return <div className="page-shell">
+    <div className="page-heading module-page-heading"><div><p className="eyebrow">SKILLMINT / HUMAN RESOURCES</p><h1>HRMS Dashboard</h1><p>Welcome, {user.full_name.split(' ')[0]}. Your attendance, team, schedules and leave in one place.</p></div><Link href="/my-attendance" className="btn primary"><Fingerprint size={17}/> Punch In / Out</Link></div>
+    <MyDay/>
+    <ModuleLinks mode="hrms"/>
+    <HrSection/>
+    <FinanceSection mode="hrms"/>
+  </div>;
+}
+
+function WorkspaceChooser() {
+  const user=useCurrentUser();
+  return <div className="page-shell workspace-chooser">
+    <section className="workspace-hero"><div className="workspace-hero-content"><span className="workspace-hero-kicker"><Sparkles size={16}/> THE SKILLMINT WORKSPACE</span><h1>Welcome back, {user.full_name.split(' ')[0]}.</h1><p>Two powerful workspaces. One connected platform. Select where you want to work today.</p></div><span className="workspace-hero-orb" aria-hidden="true"/></section>
+    <div className="module-section-heading"><div><span className="eyebrow">YOUR WORKSPACES</span><h2>Choose a workspace</h2><p>Each module has its own dashboard, navigation and day-to-day tools.</p></div></div>
+    <div className="workspace-choice-grid">
+      <Link href="/hrms-dashboard" className="workspace-choice-card hrms-choice"><div className="workspace-choice-top"><span className="workspace-choice-icon"><Users size={30}/></span><span className="workspace-choice-tag">PEOPLE & OPERATIONS</span></div><h2>HRMS</h2><p>Employee management, punch-in/out, attendance, shifts, leave, overtime, holidays and payroll.</p><div className="workspace-choice-list"><span><Fingerprint size={17}/> Attendance & Punch</span><span><IdCard size={17}/> Employee Directory</span><span><Plane size={17}/> Leaves & Shifts</span><span><Wallet size={17}/> Payroll</span></div><span className="workspace-choice-cta">Enter HRMS <ArrowRight size={19}/></span></Link>
+      <Link href="/leads-dashboard" className="workspace-choice-card crm-choice"><div className="workspace-choice-top"><span className="workspace-choice-icon"><BriefcaseBusiness size={30}/></span><span className="workspace-choice-tag">RECRUITMENT & GROWTH</span></div><h2>Lead Management</h2><p>Track company and candidate leads, resumes, jobs, recruitment pipelines and daily follow-ups.</p><div className="workspace-choice-list"><span><BriefcaseBusiness size={17}/> Company Leads</span><span><FileText size={17}/> Candidate Resumes</span><span><Layers3 size={17}/> Hiring Pipeline</span><span><CalendarClock size={17}/> Follow-ups</span></div><span className="workspace-choice-cta">Enter Lead Management <ArrowRight size={19}/></span></Link>
+    </div>
+    <div className="workspace-footnote"><LockKeyhole size={17}/><span>Both workspaces use the same SkillMint account and permissions. You can switch workspaces anytime.</span></div>
+  </div>;
+}
+
+export function DashboardView({mode='choose'}:{mode?:WorkspaceMode|'choose'}) {
+  if(mode==='hrms')return <HrmsDashboard/>;
+  if(mode==='crm')return <LeadDashboard/>;
+  return <WorkspaceChooser/>;
 }

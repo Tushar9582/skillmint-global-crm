@@ -1,6 +1,7 @@
 'use client';
 
 import { CATALOG } from '@/lib/catalog';
+import { DashboardView } from './dashboard';
 import { DataTablePage } from './data-table';
 import { EmployeesPage, HandoverPage, EmployeeProfilePage } from './team';
 import { EmployeeDirectoryPage } from './hr/employees';
@@ -18,6 +19,8 @@ import { DailyReportPage, ReportsPage, AuditPage, ActivityHistoryPage, Notificat
 export function SectionView({section}:{section:string}) {
   if(CATALOG[section])return <DataTablePage resource={section}/>;
   switch(section){
+    case 'hrms-dashboard':return <DashboardView mode="hrms"/>;
+    case 'leads-dashboard':return <DashboardView mode="crm"/>;
     case 'hr-employees':return <EmployeeDirectoryPage/>;
     case 'my-attendance':return <MyAttendancePage/>;
     case 'attendance-register':return <AttendanceRegisterPage/>;
