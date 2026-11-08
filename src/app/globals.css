@@ -400,3 +400,154 @@ button,input,select,textarea{font-family:inherit}button:focus-visible,a:focus-vi
 @media(max-width:1250px){.module-directory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:960px){.workspace-choice-grid{grid-template-columns:1fr}.workspace-choice-card{min-height:340px}}
 @media(max-width:650px){.workspace-hero{min-height:0;padding:30px 24px}.workspace-hero h1{font-size:29px}.workspace-hero p{font-size:14px}.workspace-choice-card{padding:24px;min-height:0}.workspace-choice-card h2{font-size:25px}.workspace-choice-card>p{font-size:14px}.workspace-choice-list{gap:14px;margin:22px 0}.workspace-choice-list span{font-size:12px}.workspace-choice-tag{font-size:9px}.module-directory-grid{grid-template-columns:1fr}.module-page-heading{align-items:flex-start}.module-page-heading .btn{width:100%}.module-link-card{min-height:82px;padding:14px}.module-section-heading p{font-size:13px}.workspace-footnote{align-items:flex-start}.myday-panel{align-items:flex-start;flex-wrap:wrap;padding:17px}.myday-actions{width:100%}.myday-actions .btn{flex:1}}
+
+/* SkillMint Premium Navy & White design system — final visual layer. */
+:root{
+  --navy:#071a32;
+  --navy-2:#0d2d51;
+  --ink:#3a526c;
+  --ink-strong:#102945;
+  --muted:#687f97;
+  --teal:#21558f;
+  --teal-dark:#143e72;
+  --mint:#eaf2fc;
+  --surface:#f3f6fb;
+  --line:#dfe8f2;
+  --white:#fff;
+  --shadow:0 12px 32px rgba(9,31,62,.065);
+}
+html,body{color:var(--ink);background:var(--surface)}
+::selection{background:#cbdff7;color:#0b294e}
+:where(a,button,input,select,textarea):focus-visible{outline:3px solid #79a8e1;outline-offset:3px}
+h1,h2,h3,h4{color:var(--ink-strong)}
+.eyebrow{color:#235c97;letter-spacing:1.05px}
+.btn{font-weight:800;letter-spacing:.08px;transition:background .2s,color .2s,transform .2s,box-shadow .2s}
+.btn.primary{background:linear-gradient(135deg,#1e568f,#103965);color:white;box-shadow:0 9px 20px rgba(13,54,103,.18)}
+.btn.primary:hover{background:linear-gradient(135deg,#2c669e,#0b3159);box-shadow:0 13px 26px rgba(13,54,103,.24)}
+.btn.ghost{background:#fff;border-color:#cfddeb;color:#1b4878}
+.btn.ghost:hover{background:#edf4fc;border-color:#a9c5e6}
+.btn.soft{background:#e9f1fb;color:#174e85}
+.icon-only:hover,.top-icon:hover{background:#e7f0fa;color:#123e6c}
+.text-link,.table-action,.attention-row a{color:#215d99}
+.text-link:hover,.table-action:hover,.attention-row a:hover{text-decoration:underline}
+
+/* Navy navigation, legible active states, and one uncluttered content area. */
+.sidebar{background:linear-gradient(180deg,#081c34 0%,#0c2748 60%,#071b34 100%);color:#bed0e7;box-shadow:8px 0 30px rgba(4,21,43,.08)}
+.sidebar-brand{border-bottom:1px solid rgba(255,255,255,.055)}
+.sidebar-brand .brand-logo,.login-story .brand-logo{filter:grayscale(1) brightness(0) invert(1)}
+.workspace-switch{border-color:#315075;background:rgba(255,255,255,.085);color:#fff;border-radius:12px}
+.workspace-switch:hover,.workspace-switch:focus-visible{background:#1a426c}
+.workspace-switch-arrow{color:#d0e6ff}
+.sidebar-workspace-label{color:#b9d7f4;font-size:12px}
+.sidebar-workspace-label small{color:#8faecb;font-size:11px}
+.sidebar .nav-scroll{scrollbar-color:#355777 transparent}
+.sidebar .nav-group{color:#819fbf;font-size:11px}
+.sidebar .nav-link{color:#c3d4e8;border-radius:10px;font-size:14px;font-weight:650;min-height:45px}
+.sidebar .nav-link:hover{background:#173b63;color:#fff}
+.sidebar .nav-link.active{background:#fff;color:#0b2c53;box-shadow:0 7px 17px rgba(0,0,0,.13)}
+.sidebar .nav-link.active svg{color:#154a82;opacity:1}
+.sidebar .nav-link.active::before{background:#78a7dc;width:3px;height:60%;top:20%}
+.cloud-chip{background:#14385c;border:1px solid #2a5275;color:#d5e8fb;border-radius:12px;font-size:11px}
+.cloud-chip small{color:#a9c2dd;font-size:11px}
+.cloud-chip .status-dot,.status-dot{background:#7faee4}
+.side-user{border-top-color:#34516e}
+.side-user b{font-size:12px}
+.side-user small{font-size:11px;color:#a7c1df}
+.avatar,.top-avatar{background:#e9f1fb;color:#154b83}
+.role-switch{background:#0e2d50;border-color:#355878;color:#e8f2fd}
+
+/* White app chrome and calm typography. */
+.topbar{background:rgba(255,255,255,.97);border-bottom:1px solid #e3eaf4;box-shadow:0 4px 18px rgba(14,43,77,.035)}
+.breadcrumbs{color:#788da4}
+.breadcrumbs a{color:#235487}
+.breadcrumbs b{color:#254c72}
+.global-search{background:#f6f8fc;border:1px solid #dce7f2;color:#547ca4}
+.global-search:focus-within{background:#fff;border-color:#5b8cc2;box-shadow:0 0 0 3px #e8f1fc}
+.global-search input{color:#193a60}
+.topbar-cloud{color:#1b4d84;background:#eaf2fb;border:1px solid #d8e6f4}
+.top-icon{background:#edf3fa;color:#245581}
+.content-area{background:linear-gradient(180deg,#f5f8fc 0%,#f3f6fb 48%,#f6f8fb 100%)}
+.page-heading h1{font-weight:800;letter-spacing:-1.1px}
+.page-heading p:not(.eyebrow){color:#637c93}
+.module-page-heading{border-bottom:1px solid #e1e8f2;padding-bottom:20px}
+.module-section-heading p{color:#637b91}
+
+/* Premium cards, metrics, tables and interactive data surfaces. */
+.panel,.metric-card,.module-link-card,.workspace-choice-card{background:#fff;border:1px solid #e0e8f2;box-shadow:0 10px 30px rgba(9,34,69,.055)}
+.panel,.metric-card{border-radius:17px}
+.metric-card{transition:transform .2s,border-color .2s,box-shadow .2s}
+.metric-card:hover{border-color:#b5cae5;box-shadow:0 18px 35px rgba(18,56,105,.1)}
+.metric-label,.metric-card p{color:#667f98}
+.metric-icon,.module-link-icon{background:#e9f1fc;color:#1c558e}
+.metric-number{color:#0d2a4b}
+.mini-metric{border-radius:14px;border-color:#e0e8f2;box-shadow:0 6px 18px rgba(9,34,69,.04);color:#235e99}
+.mini-metric span{color:#57718d}
+.mini-metric strong{color:#12345b}
+.panel-header{border-bottom-color:#e7edf5}
+.panel-header h2{color:#18395e}
+.panel-header p{color:#70869e}
+.queue-marker{background:#e8f1fc;color:#23598f}
+.queue-row{border-bottom-color:#e8edf5}
+.queue-row time,.quick-actions a{color:#225b97}
+.quick-actions a:hover{background:#f7faff}
+.attention-row svg{color:#326ba3}
+.table-panel{border-radius:16px}
+.table-scroll{scrollbar-color:#b5c6d9 transparent}
+table{font-size:13px}
+thead{background:#f0f5fb}
+th{font-size:11px;color:#526c8a;border-bottom-color:#dce6f1}
+td{color:#536d87;border-bottom-color:#e7eef5}
+tbody tr:hover td{background:#f7fafe}
+.table-footer{color:#627c95;border-top-color:#e4ebf4}
+.table-footer button{color:#205b96}
+.status-badge.status-new,.status-badge.status-connected,.status-badge.status-screened,.status-badge.status-qualified{background:#e8f1fc;color:#194d85}
+.status-badge.tone-info{background:#e8f1fc;color:#194d85}
+.status-badge.tone-good{background:#e9f6ef;color:#1d714e}
+
+/* Forms, filters, upload panels and dialogs feel consistent across both modules. */
+.modal,.detail-drawer{box-shadow:0 30px 90px rgba(2,23,51,.24);border:1px solid #e2e9f3}
+.modal-header,.modal-footer{border-color:#e3ebf4}
+.modal-header h2{color:#132e50}
+.modal-footer{background:#f8fafd}
+.modal-backdrop{background:rgba(5,22,45,.6);backdrop-filter:blur(4px)}
+.form-field span,.login-form label{color:#365777}
+.form-input,.input-icon,.toolbar-search,.toolbar>select{border-color:#d8e3ef;background:#fff;color:#203f60}
+.form-input:focus,.input-icon:focus-within,.toolbar-search:focus-within{border-color:#4e84bd;box-shadow:0 0 0 3px #e9f2fc}
+.form-input::placeholder,.input-icon input::placeholder{color:#92a5b9}
+.dropzone{background:#f4f8fd;border-color:#abc6e4}
+.dropzone:hover{background:#edf5ff;border-color:#568bbc}
+.alert.success{background:#eaf7f0;color:#216444}
+.alert.danger{background:#fff1f1;color:#a63843}
+.myday-panel{border-left:4px solid #225d99}
+.myday-success{color:#1c774f}
+
+/* White-and-navy login and workspace choice. */
+.login-story{background:radial-gradient(circle at 5% 95%,rgba(64,124,191,.24),transparent 40%),linear-gradient(135deg,#06182e,#0d315a)}
+.login-story::after,.login-story::before{border-color:rgba(195,220,250,.14)}
+.login-hero-copy h1 em{color:#c9e1ff}
+.login-hero-copy>p:not(.eyebrow){color:#c2d5eb}
+.eyebrow.light{color:#bedcff}
+.login-story-bottom{color:#b4c9df}
+.login-form-side{background:#fff}
+.float-card svg{color:#245c94}
+.workspace-hero{background:radial-gradient(circle at 90% 10%,#3267a150 0,transparent 42%),linear-gradient(125deg,#071a33,#0c2c52 58%,#1c4b80);box-shadow:0 22px 50px rgba(8,37,81,.16)}
+.workspace-hero-kicker{color:#c3dffd}
+.workspace-hero p{color:#c7d9ef}
+.workspace-hero-orb{border-color:#bed7f217;box-shadow:0 0 0 70px #e8f1ff08}
+.workspace-choice-card{border-radius:22px;border-color:#dfe8f3}
+.workspace-choice-card:hover,.workspace-choice-card:focus-visible,.workspace-choice-card.crm-choice:hover{border-color:#8eafd2;box-shadow:0 22px 42px rgba(18,55,105,.13)}
+.workspace-choice-icon,.crm-choice .workspace-choice-icon{background:#eaf2fc;color:#1f578f}
+.workspace-choice-tag,.crm-choice .workspace-choice-tag{background:#eff4fb;color:#1d4d83}
+.workspace-choice-card h2{color:#0d2c51}
+.workspace-choice-card>p{color:#5e7691}
+.workspace-choice-list span{color:#3a5675}
+.workspace-choice-list svg,.crm-choice .workspace-choice-list svg{color:#235b97}
+.workspace-choice-cta,.crm-choice .workspace-choice-cta{color:#1c568f;border-top-color:#e0eaf5}
+.workspace-footnote{color:#647d96}
+.workspace-footnote svg{color:#235d99}
+.module-link-card{border-radius:15px}
+.module-link-card:hover,.module-link-card:focus-visible{border-color:#96b7db;box-shadow:0 15px 29px rgba(16,53,100,.12)}
+.module-link-copy strong{color:#153657;font-size:15px}
+.module-link-copy small{color:#697f98}
+.module-link-arrow{color:#4d7cab}
+@media(max-width:650px){.sidebar .nav-link{font-size:14px}.workspace-hero{padding:30px 24px}.workspace-choice-card{padding:24px}.metric-card{border-radius:15px}}
