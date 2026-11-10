@@ -7,6 +7,7 @@ import { ArrowRight, CalendarClock, CircleAlert, BriefcaseBusiness, Users, Layer
 import { requestJson, formatDate } from '@/lib/client-api';
 import { money, useApi, useCan } from './hr/ui';
 import { useCurrentUser } from './workspace-shell';
+import { RecruiterProgressPanel } from './recruiter-progress-panel';
 
 type Dashboard={company_leads:number;candidates:number;jobs:number;applications:number;
   interviews_today:number;followups_due:number;overdue:number;placements:number;
@@ -94,6 +95,7 @@ export function DashboardView(){
         </div>
       </div>
     </div>
+    {user.role==='admin'&&<RecruiterProgressPanel/>}
     {user.role==='admin'&&<div className="dashboard-grid lower-panels"><div className="panel"><div className="panel-header"><h2>Requires Attention</h2></div><div className="attention-row"><CircleAlert size={18}/><span>Potential duplicate resumes</span><Link href="/duplicate-reviews">{data?.exceptions?.duplicate_reviews??'—'} to review</Link></div><div className="attention-row"><CircleAlert size={18}/><span>Unassigned company leads</span><Link href="/company-leads">{data?.exceptions?.unassigned_leads??'—'} records</Link></div></div>
       <div className="panel"><div className="panel-header"><h2>Recent Activity</h2></div><div className="activity-small">{data?.latest?.length?data.latest.slice(0,5).map((x,i)=><div key={String(x.id||i)}><span>{String(x.actor_name||'Recruiter')}</span><b>{String(x.action||x.outcome||'Activity')}</b><small>{formatDate(x.created_at,true)}</small></div>):<p className="muted">No recent activity yet.</p>}</div></div></div>}
     <ClientBilling/>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle, Download, Edit3, Eye, FileText, Plus, Search, Trash2, UploadCloud, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Download, Edit3, Eye, FileText, Plus, Search, Trash2, UploadCloud, UserRoundPlus, X } from 'lucide-react';
 import { CATALOG, type ResourceDefinition, type Field } from '@/lib/catalog';
 import { formatDate, friendly, requestJson, toInputDate } from '@/lib/client-api';
 import { attachDemoResume, isDemoClient, saveDemoResumeCandidate } from '@/lib/demo-client';
@@ -9,6 +9,8 @@ import { loadDemoResumeFile } from '@/lib/demo-resume-storage';
 import { ResumeDropzone, type Duplicate, type Extraction, type Row } from './resume-upload';
 import { useCrmConfig } from './hr/use-crm-config';
 import { useCurrentUser } from './workspace-shell';
+import { LeadAssignmentPanel } from './lead-assignment-panel';
+import { isLeadResource } from '@/lib/lead-operations';
 
 type Option={id:string;label:string};
 type Lookup=Record<string,Option[]>;
@@ -212,7 +214,7 @@ function FollowupCompletion({row,onClose,onDone}:{row:Row;onClose:()=>void;onDon
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   async function submit(event:FormEvent){event.preventDefault();setBusy(true);setError('');try{
-    await requestJson(`/api/v1/followups/${row.id}/complete`,{method:'POST',body:JSON.stringify({channel,outcome,notes,next_due_at:next||null})});onDone();
+    await requestJson(`/api/v1/followups/${row.id}/complete`,{method:'POST',body:JSON.stringify({channel,outcome,notes,next_due_at:next?new Date(`${next}:00+05:30`).toISOString():null})});onDone();
   }catch(err){setError(err instanceof Error?err.message:'Unable to save');}finally{setBusy(false);}}
   return <div className="modal-backdrop"><div className="modal" role="dialog" aria-modal="true"><div className="modal-header"><div><p className="eyebrow">CONTACT OUTCOME</p><h2>Log Follow-up</h2><p>{String(row.title)}</p></div><button className="icon-only" onClick={onClose}><X size={20}/></button></div>
     <form onSubmit={submit}><div className="modal-content form-grid">
@@ -224,26 +226,36 @@ function FollowupCompletion({row,onClose,onDone}:{row:Row;onClose:()=>void;onDon
   </div></div>;
 }
 
-function ActivityForm({resource,row,onClose,onDone}:{resource:string;row:Row;onClose:()=>void;onDone:()=>void}) {
+function ActivityForm({resource,row,onClose,onDone,initialChannel='call'}:{resource:string;row:Row;onClose:()=>void;onDone:()=>void;initialChannel?:string}) {
   const channels=useCrmConfig().list('followup_type',['call','email','whatsapp','meeting','other']);
-  const [channel,setChannel]=useState('call');const [outcome,setOutcome]=useState('connected');
+  const [channel,setChannel]=useState(initialChannel);const [outcome,setOutcome]=useState(initialChannel==='meeting'?'scheduled':'connected');
   const [notes,setNotes]=useState('');const [due,setDue]=useState('');
   const [busy,setBusy]=useState(false);const [error,setError]=useState('');
   async function save(event:FormEvent){event.preventDefault();setBusy(true);setError('');try{
     await requestJson('/api/v1/activities',{method:'POST',body:JSON.stringify({
       target_type:resource==='company-leads'?'company_leads':resource,target_id:row.id,
-      channel,outcome,notes,next_due_at:due||null,
+      channel,outcome,notes,next_due_at:due?new Date(`${due}:00+05:30`).toISOString():null,
     })});onDone();
   }catch(err){setError(err instanceof Error?err.message:'Unable to log contact');}finally{setBusy(false);}}
   return <div className="modal-backdrop"><div className="modal" role="dialog" aria-modal="true"><div className="modal-header"><div><p className="eyebrow">CONTACT HISTORY</p><h2>Log Call / Follow-up</h2><p>{createLabel(resource,row)}</p></div><button className="icon-only" onClick={onClose}><X size={20}/></button></div>
-    <form onSubmit={save}><div className="modal-content form-grid"><label className="form-field"><span>Channel</span><select className="form-input" value={channel} onChange={e=>setChannel(e.target.value)}>{channels.map(v=><option key={v.value} value={v.value}>{v.label}</option>)}</select></label><label className="form-field"><span>Outcome</span><select className="form-input" value={outcome} onChange={e=>setOutcome(e.target.value)}>{['connected','no_answer','interested','not_interested','screened','scheduled','completed','other'].map(v=><option key={v} value={v}>{friendly(v)}</option>)}</select></label><label className="form-field span-2"><span>Discussion Notes</span><textarea className="form-input" rows={4} value={notes} onChange={e=>setNotes(e.target.value)}/></label><label className="form-field span-2"><span>Next Follow-up Date</span><input type="datetime-local" className="form-input" value={due} onChange={e=>setDue(e.target.value)}/></label></div>{error&&<div className="alert danger modal-error">{error}</div>}<div className="modal-footer"><button className="btn ghost" type="button" onClick={onClose}>Cancel</button><button className="btn primary" type="submit" disabled={busy}>Save Activity</button></div></form>
+    <form onSubmit={save}><div className="modal-content form-grid"><label className="form-field"><span>Channel</span><select className="form-input" value={channel} onChange={e=>{setChannel(e.target.value);if(e.target.value==='meeting')setOutcome('scheduled');}}>{channels.map(v=><option key={v.value} value={v.value}>{v.label}</option>)}</select></label><label className="form-field"><span>Outcome</span><select className="form-input" value={outcome} onChange={e=>setOutcome(e.target.value)}>{['connected','no_answer','interested','not_interested','screened','scheduled','completed','other'].map(v=><option key={v} value={v}>{friendly(v)}</option>)}</select></label><label className="form-field span-2"><span>Discussion Notes / Agenda</span><textarea className="form-input" rows={4} value={notes} onChange={e=>setNotes(e.target.value)}/></label><label className="form-field span-2"><span>{channel==='meeting'?'Meeting / Next Follow-up (IST)':'Next Follow-up (IST)'}{channel==='meeting'&&outcome==='scheduled'?' *':''}</span><input type="datetime-local" className="form-input" required={channel==='meeting'&&outcome==='scheduled'} value={due} onChange={e=>setDue(e.target.value)}/></label></div>{error&&<div className="alert danger modal-error">{error}</div>}<div className="modal-footer"><button className="btn ghost" type="button" onClick={onClose}>Cancel</button><button className="btn primary" type="submit" disabled={busy}>{busy?'Saving…':channel==='meeting'?'Save Meeting':'Save Activity'}</button></div></form>
   </div></div>;
 }
 
-function RecordDetail({resource,row,onClose,onEdit,onComplete,onLog,onConvert,onDelete}:{resource:string;row:Row;onClose:()=>void;onEdit:()=>void;onComplete:()=>void;onLog:()=>void;onConvert:()=>void;onDelete?:()=>void}) {
+type LeadTimeline={
+  stages:Row[];assignments:Row[];followups:Row[];interviews:Row[];
+};
+
+function RecordDetail({resource,row,onClose,onEdit,onComplete,onLog,onMeeting,onConvert,onDelete,onUpdated}:{resource:string;row:Row;onClose:()=>void;onEdit:()=>void;onComplete:()=>void;onLog:()=>void;onMeeting:()=>void;onConvert:()=>void;onDelete?:()=>void;onUpdated:(record:Row)=>void}) {
   const def=CATALOG[resource];
   const cfg=useCrmConfig();
+  const user=useCurrentUser();
   const [activities,setActivities]=useState<Row[]>([]);
+  const [timeline,setTimeline]=useState<LeadTimeline|null>(null);
+  const [stageChoice,setStageChoice]=useState(String(row.stage||''));
+  const [stageBusy,setStageBusy]=useState(false);
+  const [stageError,setStageError]=useState('');
+  const [stageSaved,setStageSaved]=useState('');
   const [resumes,setResumes]=useState<Row[]>([]);
   const [resumeBusy,setResumeBusy]=useState<string|null>(null);
   const [resumeError,setResumeError]=useState('');
@@ -272,13 +284,48 @@ function RecordDetail({resource,row,onClose,onEdit,onComplete,onLog,onConvert,on
   useEffect(()=>{
     if(['company-leads','candidates','applications'].includes(resource))
       requestJson<{data:Row[]}>(`/api/v1/activities?target_type=${targetType}&target_id=${row.id}`).then(v=>setActivities(v.data)).catch(()=>{});
+    if(isLeadResource(resource))requestJson<{data:LeadTimeline}>(`/api/v1/lead-timeline?resource=${resource}&id=${row.id}`)
+      .then(v=>setTimeline(v.data)).catch(()=>setTimeline(null));
     if(resource==='candidates')requestJson<{data:Row[]}>(`/api/v1/resumes?candidate_id=${row.id}`).then(v=>setResumes(v.data)).catch(()=>{});
   },[resource,row.id,targetType]);
+  useEffect(()=>{setStageChoice(String(row.stage||''));},[row.stage]);
+  async function updateStage(){
+    if(!stageChoice||stageChoice===row.stage)return;
+    setStageBusy(true);setStageError('');setStageSaved('');
+    try{
+      const response=await requestJson<{data:Row}>(`/api/v1/${resource}/${row.id}`,{method:'PATCH',body:JSON.stringify({stage:stageChoice})});
+      onUpdated({...row,...response.data});setStageSaved(`Stage moved to ${cfg.label(resource,'stage',stageChoice)}.`);
+      const updated=await requestJson<{data:LeadTimeline}>(`/api/v1/lead-timeline?resource=${resource}&id=${row.id}`);
+      setTimeline(updated.data);
+    }catch(error){setStageError(error instanceof Error?error.message:'Unable to update stage');}
+    finally{setStageBusy(false);}
+  }
+  const upcoming=timeline?.followups.filter(task=>task.status==='pending')||[];
+  const stages=cfg.stagesFor(resource,def.stages);
   return <div className="modal-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}><div className="detail-drawer" role="dialog" aria-modal="true"><div className="modal-header"><div><p className="eyebrow">{def.singular.toUpperCase()} / 360 VIEW</p><h2>{createLabel(resource,row)}</h2><p>Record details and immutable activity</p></div><button className="icon-only" onClick={onClose}><X size={20}/></button></div>
-    <div className="detail-content"><div className="detail-field-grid">{def.fields.filter(field=>field.name!=='target_id').map(field=><div key={field.name}><small>{field.label}</small><strong>{field.type==='datetime-local'||field.type==='date'?formatDate(row[field.name],field.type==='datetime-local'):(field.name==='stage'||field.name==='priority'||field.name==='source')?cfg.label(resource,field.name,row[field.name]):friendly(row[field.name])}</strong></div>)}{cfg.customFields(resource).map(d=>{const raw=((row.custom as Row|undefined)||{})[d.field_key];return <div key={`custom-${d.field_key}`}><small>{d.label}</small><strong>{raw===undefined||raw===null||raw===''?'—':d.field_type==='date'?formatDate(raw):String(raw)}</strong></div>;})}</div>
+    <div className="detail-content">
+      {isLeadResource(resource)&&<div className="lead-detail-overview"><div className="lead-detail-facts"><div><small>Current Stage</small><strong>{cfg.label(resource,'stage',row.stage)}</strong></div><div><small>Assigned To</small><strong>{String(row.owner_name||'Unassigned')}</strong></div><div><small>Next Task / Meeting</small><strong>{upcoming[0]?formatDate(upcoming[0].due_at,true):'No pending task'}</strong></div></div>
+        {stages&&<div className="lead-stage-update"><label htmlFor="lead-stage-select">Update Lead Stage</label><div><select id="lead-stage-select" className="form-input" value={stageChoice} onChange={e=>setStageChoice(e.target.value)}><option value="">Select stage</option>{stages.map(stage=><option key={stage} value={stage}>{cfg.label(resource,'stage',stage)}</option>)}</select><button className="btn primary" disabled={stageBusy||!stageChoice||stageChoice===row.stage} type="button" onClick={()=>void updateStage()}>{stageBusy?'Updating…':'Save Stage'}</button></div></div>}
+        {stageError&&<div className="alert danger" role="alert">{stageError}</div>}{stageSaved&&<div className="alert success" role="status">{stageSaved}</div>}
+      </div>}
+      <div className="detail-field-grid">{def.fields.filter(field=>field.name!=='target_id').map(field=><div key={field.name}><small>{field.label}</small><strong>{field.name==='owner_id'?String(row.owner_name||'Unassigned'):field.type==='datetime-local'||field.type==='date'?formatDate(row[field.name],field.type==='datetime-local'):(field.name==='stage'||field.name==='priority'||field.name==='source')?cfg.label(resource,field.name,row[field.name]):friendly(row[field.name])}</strong></div>)}{cfg.customFields(resource).map(d=>{const raw=((row.custom as Row|undefined)||{})[d.field_key];return <div key={`custom-${d.field_key}`}><small>{d.label}</small><strong>{raw===undefined||raw===null||raw===''?'—':d.field_type==='date'?formatDate(raw):String(raw)}</strong></div>;})}</div>
       {resource==='candidates'&&<section className="detail-section"><h3>Saved Resumes</h3><p className="muted">{isDemoClient()?'Files are saved in this browser only. Clearing site data removes them.':'Files are held in private storage and linked to this candidate.'}</p>{resumeError&&<div className="alert danger" role="alert">{resumeError}</div>}{resumes.length?resumes.map((file,index)=>{const isPdf=/\.pdf$/i.test(String(file.original_filename));const label=<><FileText size={17}/>v{resumes.length-index} · {String(file.original_filename)} <small>{formatDate(file.created_at,true)}</small></>;return <div key={String(file.id)} className="file-link resume-file-row"><span className="resume-file-name">{label}</span><span className="resume-file-actions">{isDemoClient()?<>{isPdf&&<button type="button" className="btn ghost small" disabled={resumeBusy===String(file.id)} onClick={()=>void openDemoResume(file,false)}><Eye size={15}/> Open</button>}<button type="button" className="btn soft small" disabled={resumeBusy===String(file.id)} onClick={()=>void openDemoResume(file,true)}><Download size={15}/> {resumeBusy===String(file.id)?'Loading…':'Download'}</button></>:<>{isPdf&&<a className="btn ghost small" href={`/api/v1/resumes/${file.id}/download?view=1`} target="_blank" rel="noreferrer"><Eye size={15}/> Open</a>}<a className="btn soft small" href={`/api/v1/resumes/${file.id}/download`}><Download size={15}/> Download</a></>}</span></div>;}):<p>No resume uploaded yet. Use Upload Resume to create or attach a candidate file.</p>}</section>}
       {['company-leads','candidates','applications'].includes(resource)&&<section className="detail-section"><h3>Follow-up & Communication History</h3>{activities.length?activities.map(a=><div key={String(a.id)} className="activity-entry"><b>{friendly(a.channel)} · {friendly(a.outcome)}</b><small>{String(a.employee_name)} · {formatDate(a.created_at,true)}</small><p>{String(a.notes||'No notes')}</p></div>):<p>No logged activities yet.</p>}</section>}
-    </div><div className="modal-footer"><button className="btn ghost" onClick={onClose}>Close</button>{resource==='followups'&&row.status==='pending'&&<button className="btn soft" onClick={onComplete}><CheckCircle size={16}/> Complete</button>}{['company-leads','candidates','applications'].includes(resource)&&<button className="btn soft" onClick={onLog}>Log Contact</button>}{resource==='company-leads'&&row.stage!=='converted'&&<button className="btn soft" onClick={onConvert}>Convert to Client</button>}{onDelete&&<button className="btn ghost" onClick={onDelete}><Trash2 size={16}/> Delete Lead</button>}<button className="btn primary" onClick={onEdit}><Edit3 size={16}/> Edit</button></div>
+      {isLeadResource(resource)&&<section className="detail-section lead-timeline-section"><h3>Meetings & Follow-up Tasks</h3>
+        {timeline===null?<p className="muted">Checking lead activity…</p>:<>
+          {timeline.followups.length===0&&timeline.interviews.length===0?<p className="muted">No meetings or tasks recorded yet. Schedule one from the action bar.</p>:<>
+            {timeline.followups.slice(0,12).map(task=><div className="lead-timeline-item" key={String(task.id)}><span className={`lead-timeline-dot ${task.status==='pending'?'pending':''}`}/><div><b>{String(task.title||'Follow-up')} <span className="lead-timeline-status">{friendly(task.status)}</span></b><small>{formatDate(task.due_at,true)} · {String(task.owner_name||'Unassigned')} · {friendly(task.channel||'task')}</small></div></div>)}
+            {timeline.interviews.slice(0,8).map(meeting=><div className="lead-timeline-item" key={String(meeting.id)}><span className="lead-timeline-dot pending"/><div><b>{String(meeting.round_label||'Interview')} · {friendly(meeting.outcome)}</b><small>{formatDate(meeting.scheduled_at,true)} · {friendly(meeting.mode)} · {String(meeting.owner_name||'Recruitment')}</small>{/^https?:\/\//i.test(String(meeting.meeting_link||''))&&<a href={String(meeting.meeting_link)} target="_blank" rel="noopener noreferrer">Open meeting link</a>}</div></div>)}
+          </>}
+        </>}
+      </section>}
+      {isLeadResource(resource)&&timeline&&<section className="detail-section lead-timeline-section"><h3>Stage & Assignment History</h3>
+        {timeline.stages.length===0&&timeline.assignments.length===0?<p className="muted">No status changes or reassignments recorded yet.</p>:<>
+          {timeline.stages.slice(0,10).map(change=><div className="lead-timeline-item" key={String(change.id)}><span className="lead-timeline-dot"/><div><b>{friendly(change.old_stage)} → {friendly(change.new_stage)}</b><small>{String(change.changed_by_name||'Recruiter')} · {formatDate(change.created_at,true)}</small></div></div>)}
+          {timeline.assignments.slice(0,10).map(change=><div className="lead-timeline-item" key={String(change.id)}><span className="lead-timeline-dot"/><div><b>Assigned to {String(change.to_name||'Recruiter')}</b><small>{String(change.from_name||'Unassigned')} · {formatDate(change.created_at,true)} · {String(change.reason||'Reassignment')}</small></div></div>)}
+        </>}
+      </section>}
+    </div><div className="modal-footer"><button className="btn ghost" onClick={onClose}>Close</button>{resource==='followups'&&row.status==='pending'&&<button className="btn soft" onClick={onComplete}><CheckCircle size={16}/> Complete</button>}{isLeadResource(resource)&&<button className="btn soft" onClick={onMeeting}>Schedule Meeting</button>}{['company-leads','candidates','applications'].includes(resource)&&<button className="btn soft" onClick={onLog}>Log Contact</button>}{resource==='company-leads'&&row.stage!=='converted'&&<button className="btn soft" onClick={onConvert}>Convert to Client</button>}{onDelete&&user.role==='admin'&&<button className="btn ghost" onClick={onDelete}><Trash2 size={16}/> Delete Lead</button>}<button className="btn primary" onClick={onEdit}><Edit3 size={16}/> Edit</button></div>
   </div></div>;
 }
 
@@ -304,6 +351,7 @@ export function DataTablePage({resource}:{resource:string}) {
   const [employees,setEmployees]=useState<Option[]>([]);
   const [bulkBusy,setBulkBusy]=useState(false);
   const canBulkAssign=user.role==='admin'&&resource!=='followups';
+  const canLeadAllocation=canBulkAssign&&isLeadResource(resource);
   const canDelete=user.role==='admin'&&['company-leads','candidates'].includes(resource);
   useEffect(()=>{
     if(!canBulkAssign)return;
@@ -350,15 +398,16 @@ export function DataTablePage({resource}:{resource:string}) {
     <div className="toolbar panel"><div className="toolbar-search"><Search size={17}/><input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder={`Search ${def.plural.toLowerCase()}…`}/></div>
       {(()=>{const stages=cfg.stagesFor(resource,def.stages);return stages&&<select value={stage} onChange={e=>{setStage(e.target.value);setPage(1);}}><option value="">All Stages</option>{stages.map(v=><option key={v} value={v}>{cfg.label(resource,'stage',v)}</option>)}</select>;})()}
       <span className="record-count">{rows.length} records on this page</span></div>
-    {canBulkAssign&&checked.length>0&&<div className="toolbar panel"><strong>{checked.length} selected</strong><select className="form-input" aria-label="Assign selected records to" value={bulkOwner} onChange={e=>setBulkOwner(e.target.value)}><option value="">Select receiving employee</option>{employees.map(e=><option key={e.id} value={e.id}>{e.label}</option>)}</select><button className="btn primary" disabled={!bulkOwner||bulkBusy} onClick={bulkAssign}>{bulkBusy?'Assigning…':'Assign Selected'}</button>{canDelete&&<button className="btn ghost" disabled={bulkBusy} onClick={()=>void deleteLeads(checked)}><Trash2 size={16}/> Delete Selected</button>}<button className="btn ghost" onClick={()=>setChecked([])}>Clear</button></div>}
+    {canLeadAllocation&&<LeadAssignmentPanel resource={resource} search={search} stage={stage} selectedIds={checked} employees={employees} onAssigned={()=>void load()} onClear={()=>setChecked([])}/>}
+    {canBulkAssign&&checked.length>0&&<div className="toolbar panel"><strong>{checked.length} selected</strong>{!canLeadAllocation&&<><select className="form-input" aria-label="Assign selected records to" value={bulkOwner} onChange={e=>setBulkOwner(e.target.value)}><option value="">Select receiving employee</option>{employees.map(e=><option key={e.id} value={e.id}>{e.label}</option>)}</select><button className="btn primary" disabled={!bulkOwner||bulkBusy} onClick={bulkAssign}>{bulkBusy?'Assigning…':'Assign Selected'}</button></>}{canDelete&&<button className="btn ghost" disabled={bulkBusy} onClick={()=>void deleteLeads(checked)}><Trash2 size={16}/> Delete Selected</button>}<button className="btn ghost" onClick={()=>setChecked([])}>Clear</button></div>}
     {error&&<div className="alert danger">{error}</div>}
     <div className="table-panel panel"><div className="panel-header"><h2>All Records</h2><span className="muted">Select a row to view details</span></div><div className="table-scroll" tabIndex={0} aria-label={`${def.plural} records, scroll horizontally to see more columns`}><table className={resource==='candidates'?'candidate-table':undefined}><thead><tr>{canBulkAssign&&<th><input type="checkbox" aria-label="Select all on this page" checked={rows.length>0&&checked.length===rows.length} onChange={e=>setChecked(e.target.checked?rows.map(row=>String(row.id)):[])}/></th>}{def.columns.map(col=><th key={col}>{friendly(col)}</th>)}<th>Action</th></tr></thead><tbody>{loading?<tr><td colSpan={def.columns.length+1+Number(canBulkAssign)} className="table-empty">Loading records…</td></tr>:rows.length===0?<tr><td colSpan={def.columns.length+1+Number(canBulkAssign)} className="table-empty">No records yet. Create your first {def.singular.toLowerCase()}.</td></tr>:rows.map(row=><tr key={String(row.id)}>{canBulkAssign&&<td><input type="checkbox" aria-label={`Select ${createLabel(resource,row)}`} checked={checked.includes(String(row.id))} onChange={e=>setChecked(old=>e.target.checked?[...old,String(row.id)]:old.filter(id=>id!==row.id))}/></td>}{def.columns.map((col,index)=><td key={col}>{index===0?<button className="record-link" onClick={()=>setSelected(row)}>{displayRow(row,col,labelOf)}</button>:displayRow(row,col,labelOf)}</td>)}<td><span className="table-row-actions"><button className="table-action" onClick={()=>resource==='followups'&&row.status==='pending'?setCompletion(row):setSelected(row)}>{resource==='followups'&&row.status==='pending'?'Log':'View'} <ArrowRight size={13}/></button>{canDelete&&<button className="table-action" onClick={()=>void deleteLeads([String(row.id)])}><Trash2 size={13}/> Delete</button>}</span></td></tr>)}</tbody></table></div>
       <div className="table-footer"><span>Page {page}</span><div><button disabled={page<=1||loading} onClick={()=>setPage(x=>x-1)}><ArrowLeft size={15}/> Prev</button><button disabled={!hasMore||loading} onClick={()=>setPage(x=>x+1)}>Next <ArrowRight size={15}/></button></div></div>
     </div>
     {edit!==false&&<RecordForm resource={resource} current={edit} onClose={()=>setEdit(false)} onSaved={save}/>}
     {intake&&<CandidateIntake initialTab={intake} onClose={()=>setIntake(false)} onSaved={intakeSaved}/>}
-    {selected&&<RecordDetail resource={resource} row={selected} onClose={()=>setSelected(null)} onEdit={()=>{setEdit(selected);setSelected(null);}} onComplete={()=>{setCompletion(selected);setSelected(null);}} onLog={()=>{setActivity(selected);setSelected(null);}} onConvert={()=>{void convertLead();}} onDelete={canDelete?()=>void deleteLeads([String(selected.id)]):undefined}/>} 
+    {selected&&<RecordDetail resource={resource} row={selected} onClose={()=>setSelected(null)} onEdit={()=>{setEdit(selected);setSelected(null);}} onComplete={()=>{setCompletion(selected);setSelected(null);}} onLog={()=>{setActivity(selected);setSelected(null);}} onMeeting={()=>{setActivity({...selected,__presetMeeting:true});setSelected(null);}} onConvert={()=>{void convertLead();}} onDelete={canDelete?()=>void deleteLeads([String(selected.id)]):undefined} onUpdated={record=>{setSelected(record);void load();}}/>}
     {completion&&<FollowupCompletion row={completion} onClose={()=>setCompletion(null)} onDone={complete}/>}
-    {activity&&<ActivityForm resource={resource} row={activity} onClose={()=>setActivity(null)} onDone={()=>{setActivity(null);void load();}}/>}
+    {activity&&<ActivityForm resource={resource} row={activity} initialChannel={activity.__presetMeeting?'meeting':'call'} onClose={()=>setActivity(null)} onDone={()=>{setActivity(null);void load();}}/>}
   </div>;
 }

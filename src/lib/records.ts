@@ -55,7 +55,7 @@ export async function listRecords(actor:Actor,resource:string,limit=50,offset=0,
     condition+=` AND r.stage=$${params.length}`;
   }
   params.push(limit,offset);
-  return sql<Row>(`${selectClause(resource)} ${condition} ORDER BY r.created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`,params);
+  return sql<Row>(`${selectClause(resource)} ${condition} ORDER BY r.created_at DESC,r.id DESC LIMIT $${params.length-1} OFFSET $${params.length}`,params);
 }
 
 export async function getRecord(actor:Actor,resource:string,id:string,client?:PoolClient):Promise<Row> {

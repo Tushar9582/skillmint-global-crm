@@ -598,3 +598,108 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.nav-scroll::-webkit-scrollbar,
   .modal.wide{width:100%;height:100dvh;max-height:100dvh;border-radius:0}
   .modal.wide .modal-footer{gap:8px}
 }
+
+/* Admin lead allocation: precise row-range batches and checked-row assignments. */
+.lead-allocation{padding:24px 26px;display:grid;gap:18px;border-color:#cbdced;background:linear-gradient(125deg,#fff 60%,#f1f6fd)}
+.lead-allocation-title{display:flex;align-items:center;gap:17px}
+.lead-allocation-title>div{min-width:0;flex:1}
+.lead-allocation-title h2{font-size:21px;color:#0d3159;letter-spacing:-.45px}
+.lead-allocation-title p:not(.eyebrow){color:#597390;font-size:13px;margin-top:6px}
+.lead-allocation-title .eyebrow{margin-bottom:5px;color:#235d99}
+.lead-allocation-icon{width:47px;height:47px;display:grid;place-items:center;border-radius:13px;background:#e4effe;color:#235e9e;flex:none}
+.lead-allocation-total{padding:9px 13px;white-space:nowrap;border-radius:99px;background:#eaf1fa;color:#235486;font-size:12px;font-weight:800}
+.lead-allocation-modes{display:flex;gap:7px;padding:5px;width:max-content;max-width:100%;border-radius:12px;background:#eaf1fa}
+.lead-allocation-modes button{display:flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:9px;background:transparent;padding:11px 15px;color:#486987;font-size:13px;font-weight:800;cursor:pointer}
+.lead-allocation-modes button.active{color:#fff;background:#1d5186;box-shadow:0 5px 14px #163e6d30}
+.lead-allocation-fields{display:grid;grid-template-columns:110px 110px minmax(200px,1fr) minmax(220px,1fr);gap:14px;align-items:end}
+.lead-allocation-fields .form-input{min-width:0}
+.lead-allocation-selected{grid-column:span 2;display:flex;flex-direction:column;justify-content:center;gap:4px;font-size:13px;color:#53708b}
+.lead-allocation-selected b{color:#123c65;font-size:15px}
+.lead-allocation-selected button{background:transparent;border:0;padding:0;width:max-content;color:#1b5b98;font-weight:700;cursor:pointer}
+.lead-allocation-bottom{display:flex;align-items:center;justify-content:space-between;gap:20px;border-top:1px solid #e0e9f4;padding-top:18px}
+.lead-allocation-bottom p{font-size:13px;color:#58738f;line-height:1.6;max-width:800px}
+.lead-allocation-bottom .btn{flex:none}
+.lead-allocation-hint{font-size:13px;color:#855e23}
+.lead-allocation-hint a{color:#215c99;text-decoration:underline}
+
+/* Recruiter-level progress, directly connected to assignment and activity records. */
+.recruiter-progress{overflow:hidden}
+.recruiter-progress-heading{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.recruiter-progress-heading h2{font-size:22px}
+.recruiter-progress-heading .eyebrow{color:#285f98;margin-bottom:6px}
+.recruiter-progress-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:15px;padding:19px 24px;border-bottom:1px solid #e1e9f3}
+.recruiter-progress-dates{display:flex;flex-wrap:wrap;gap:11px}
+.recruiter-progress-dates label{display:flex;flex-direction:column;gap:5px}
+.recruiter-progress-dates label span{font-size:12px;font-weight:800;color:#49698b}
+.recruiter-progress-dates input{width:175px;min-height:42px;font-size:14px}
+.recruiter-periods{display:flex;gap:8px;flex-wrap:wrap}
+.recruiter-periods button{background:#ecf3fc;color:#235b95;border:1px solid #d8e6f5;border-radius:9px;font-size:12px;font-weight:800;padding:12px;cursor:pointer}
+.recruiter-periods button:hover{background:#dfeeff}
+.recruiter-progress-toolbar>.text-link{margin-left:auto;align-self:center;white-space:nowrap}
+.recruiter-progress-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:20px 24px}
+.recruiter-progress-summary>div{border-radius:13px;border:1px solid #e0eaf6;background:#f5f8fd;padding:18px 17px;display:flex;flex-direction:column;gap:12px}
+.recruiter-progress-summary span{display:flex;align-items:center;gap:8px;color:#5b7694;font-weight:700;font-size:13px}
+.recruiter-progress-summary svg{color:#28649f}
+.recruiter-progress-summary b{font-size:27px;color:#11365e;font-weight:800}
+.recruiter-progress-scroll{max-width:100%}
+.recruiter-progress-table{min-width:1000px}
+.recruiter-progress-table th,.recruiter-progress-table td{white-space:nowrap;font-size:13px;padding:15px 17px}
+.recruiter-progress-table td{vertical-align:middle}
+.recruiter-progress-table td strong{color:#183d66}
+.recruiter-person{display:block}
+.recruiter-person b{display:block;color:#14375e;font-size:14px}
+.recruiter-person small,.recruiter-detail{display:block;color:#8194aa;font-size:11px;font-weight:500;margin-top:4px}
+.progress-pending{display:inline-flex;gap:6px;align-items:center;border-radius:9px;padding:6px 9px;background:#eaf4ed;color:#30714f;font-weight:800}
+.progress-pending.has-pending{background:#fff3df;color:#9b6b22}
+.recruiter-progress-note{display:flex;align-items:center;gap:9px;padding:14px 24px;background:#f8fafd;border-top:1px solid #e5ecf5;color:#58738f;font-size:12px;line-height:1.55}
+.recruiter-progress-note svg{flex:none;color:#2c659e}
+.recruiter-progress-note a{color:#1b5a98;font-weight:800;text-decoration:underline}
+
+/* Lead detail: status, pending meetings and an auditable timeline. */
+.lead-detail-overview{margin-bottom:22px;padding:17px;border:1px solid #cddff2;border-radius:15px;background:linear-gradient(135deg,#f2f7fe,#fff);display:grid;gap:17px}
+.lead-detail-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.lead-detail-facts>div{min-width:0}
+.lead-detail-facts small{display:block;color:#6c88a3;font-size:11px;font-weight:800;margin-bottom:7px}
+.lead-detail-facts strong{display:block;color:#174a7e;font-size:13px;overflow-wrap:anywhere}
+.lead-stage-update>label{display:block;color:#395f83;font-size:12px;font-weight:800;margin-bottom:8px}
+.lead-stage-update>div{display:flex;gap:9px}
+.lead-stage-update select{flex:1;min-width:0;font-size:13px}
+.lead-stage-update button{white-space:nowrap}
+.lead-timeline-section h3{margin-bottom:15px}
+.lead-timeline-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #e8eff6}
+.lead-timeline-item:last-child{border-bottom:0}
+.lead-timeline-dot{width:11px;height:11px;margin-top:6px;border:3px solid #c8dced;background:#275f96;border-radius:50%;flex:none}
+.lead-timeline-dot.pending{background:#df9836;border-color:#ffead0}
+.lead-timeline-item>div{flex:1;min-width:0}
+.lead-timeline-item b{display:block;color:#193f68;font-size:13px;line-height:1.5}
+.lead-timeline-item small{display:block;margin-top:4px;font-size:12px;line-height:1.5;color:#718ba4;overflow-wrap:anywhere}
+.lead-timeline-item a{display:inline-block;margin-top:7px;font-size:12px;font-weight:800;color:#235e99;text-decoration:underline}
+.lead-timeline-status{display:inline-block;border-radius:9px;background:#eaf1fc;color:#235a94;padding:3px 8px;margin-left:6px;font-size:10px}
+.detail-drawer>.modal-footer{flex-wrap:wrap;gap:7px}
+
+@media(max-width:1120px){
+  .lead-allocation-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .recruiter-progress-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:650px){
+  .lead-allocation{padding:19px 15px;gap:15px}
+  .lead-allocation-title{align-items:flex-start;flex-wrap:wrap;gap:11px}
+  .lead-allocation-title h2{font-size:19px}
+  .lead-allocation-total{margin-left:auto}
+  .lead-allocation-modes{width:100%}
+  .lead-allocation-modes button{flex:1;padding:11px 6px;font-size:12px}
+  .lead-allocation-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lead-allocation-recipient,.lead-allocation-reason{grid-column:span 2}
+  .lead-allocation-bottom{flex-direction:column;align-items:stretch}
+  .lead-allocation-bottom .btn{width:100%}
+  .recruiter-progress-toolbar{padding:16px}
+  .recruiter-progress-summary{padding:13px;gap:8px}
+  .recruiter-progress-summary>div{padding:12px}
+  .recruiter-progress-summary span{font-size:11px}
+  .recruiter-progress-summary b{font-size:22px}
+  .recruiter-progress-dates label{flex:1}
+  .recruiter-progress-dates input{width:100%}
+  .lead-detail-facts{grid-template-columns:1fr}
+  .lead-stage-update>div{flex-wrap:wrap}
+  .lead-stage-update button{width:100%}
+}
