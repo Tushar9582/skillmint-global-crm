@@ -13,11 +13,12 @@ export const GET=api(async(request,actor)=>{
      JOIN candidates c ON c.id=r.candidate_id AND c.organization_id=r.organization_id
      WHERE r.id=$1 AND r.organization_id=$2`,[id,actor.organization_id]);
   if(!doc || (actor.role!=='admin' && actor.id!==doc.owner_id)) throw new HttpError(404,'Resume not found');
-  const result=await downloadResume(doc.storage_key);
+  const view=request.nextUrl.searchParams.get('view')==='1'&&doc.mime_type==='application/pdf';
+  const result=await downloadResume(doc.storage_key,view);
   if(result.url) return NextResponse.redirect(result.url,303);
   const safeName=doc.original_filename.replace(/[\r\n"\\]/g,'_').slice(0,120);
   return new NextResponse(new Uint8Array(result.bytes!),{
-    headers:{'Content-Type':doc.mime_type,'Content-Disposition':`attachment; filename="${safeName}"`,
+    headers:{'Content-Type':doc.mime_type,'Content-Disposition':`${view?'inline':'attachment'}; filename="${safeName}"`,
       'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'},
   });
 });

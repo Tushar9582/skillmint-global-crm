@@ -44,7 +44,8 @@ export async function removeResume(key: string): Promise<void> {
   await s3().send(new DeleteObjectCommand({Bucket:bucket,Key:key}));
 }
 
-export async function downloadResume(key: string): Promise<{url?:string;bytes?:Buffer}> {
+export async function downloadResume(key: string,inlinePdf=false): Promise<{url?:string;bytes?:Buffer}> {
   if(driver==='local') return {bytes:await readFile(safeFile(key))};
-  return {url:await getSignedUrl(s3(),new GetObjectCommand({Bucket:bucket,Key:key}),{expiresIn:120})};
+  return {url:await getSignedUrl(s3(),new GetObjectCommand({Bucket:bucket,Key:key,
+    ResponseContentDisposition:inlinePdf?'inline':undefined}),{expiresIn:120})};
 }

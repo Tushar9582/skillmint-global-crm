@@ -2,6 +2,7 @@
 
 import { demoHrRequest } from './hr/demo-all';
 import { demoValidateCrm } from './hr/demo-config';
+import { removeDemoResumeFiles, saveDemoResumeFile } from './demo-resume-storage';
 
 /** Browser-only CRM simulation. It is intentionally isolated from API/database data. */
 type Row=Record<string,unknown>;
@@ -51,7 +52,15 @@ export async function demoRequest<T>(url:string,init?:RequestInit):Promise<T> {
     if(!['company-leads','candidates'].includes(base))throw new Error('Only company and candidate leads can be deleted.');
     const index=rows.findIndex(x=>x.id===recordId);if(index<0)throw new Error('Lead not found.');
     rows.splice(index,1);
-    if(base==='candidates'){const removed=(data.resumes||[]).filter(r=>r.candidate_id===recordId).map(r=>r.id);data.resumes=(data.resumes||[]).filter(r=>r.candidate_id!==recordId);data.followups=(data.followups||[]).filter(r=>r.target_id!==recordId);data.activities=(data.activities||[]).filter(r=>r.target_id!==recordId);void removed;}
+    if(base==='candidates'){
+      const removed=(data.resumes||[]).filter(r=>r.candidate_id===recordId).map(r=>String(r.id));
+      data.resumes=(data.resumes||[]).filter(r=>r.candidate_id!==recordId);
+      data.followups=(data.followups||[]).filter(r=>r.target_id!==recordId);
+      data.activities=(data.activities||[]).filter(r=>r.target_id!==recordId);
+      save(data);
+      // Metadata is already gone; failed cleanup must not resurrect a deleted lead.
+      await removeDemoResumeFiles(removed).catch(()=>undefined);
+    }
     if(base==='company-leads')data.followups=(data.followups||[]).filter(r=>r.target_id!==recordId);
     save(data);return {ok:true,message:'Lead deleted successfully.'} as T;
   }
@@ -67,19 +76,33 @@ export function findDemoDuplicate(values:Row,sha256:string){
   const match=exact?data.candidates.find(r=>r.id===exact.candidate_id):identity;
   return {duplicate:true,kind:exact?'exact':'identity',existing_candidate_id:match?String(match.id):null,existing_candidate_name:match?String(match.full_name):null,message:exact?'This exact resume has already been uploaded.':'A candidate with this email or phone already exists. Attach the resume to the existing candidate instead of creating a duplicate.'};
 }
-export function saveDemoResumeCandidate(values:Row,file:{name:string;sha256:string},ownerId:string){
+export async function saveDemoResumeCandidate(values:Row,file:File,sha256:string,ownerId:string){
   const data=store();
-  const dup=findDemoDuplicate(values,file.sha256);
+  const dup=findDemoDuplicate(values,sha256);
   if(dup) return dup;
   const candidate={...values,id:id(),source:'resume',stage:String(values.stage||'new'),owner_id:ownerId||admin.id,owner_name:admin.full_name,created_at:now(),notes:[String(values.notes||''),'Development demo: parsed locally; resume file was not uploaded to cloud storage.'].filter(Boolean).join('\n')};
-  data.candidates.unshift(candidate);const version={id:id(),candidate_id:candidate.id,original_filename:file.name,sha256:file.sha256,storage_key:'demo-browser-only',created_at:now()};(data.resumes||=[]).unshift(version);save(data);
-  return {created:true,message:'Candidate lead created from locally extracted resume details. The resume file was not saved to cloud storage.',data:{candidate_id:String(candidate.id),resume_version_id:String(version.id)}};
+  const version={id:id(),candidate_id:candidate.id,original_filename:file.name,sha256,storage_key:'demo-indexeddb',mime_type:file.name.toLowerCase().endsWith('.pdf')?'application/pdf':'application/vnd.openxmlformats-officedocument.wordprocessingml.document',file_size:file.size,created_at:now()};
+  await saveDemoResumeFile(version.id,file);
+  try {
+    // Re-read after IndexedDB completes so another tab's new candidate is not overwritten.
+    const latest=store();
+    const subsequent=findDemoDuplicate(values,sha256);
+    if(subsequent){await removeDemoResumeFiles([version.id]);return subsequent;}
+    latest.candidates.unshift(candidate);(latest.resumes||=[]).unshift(version);save(latest);
+  } catch(error){await removeDemoResumeFiles([version.id]).catch(()=>undefined);throw error;}
+  return {created:true,message:'Candidate and resume saved to this browser. Open or download the file from the candidate details.',data:{candidate_id:String(candidate.id),resume_version_id:String(version.id)}};
 }
-export function attachDemoResume(candidateId:string,file:{name:string;sha256:string}){
+export async function attachDemoResume(candidateId:string,file:File,sha256:string){
   const data=store();
   if(!data.candidates.some(r=>r.id===candidateId))throw new Error('Candidate not found.');
-  if((data.resumes||[]).some(r=>r.sha256===file.sha256))throw new Error('This exact resume has already been uploaded.');
-  const version={id:id(),candidate_id:candidateId,original_filename:file.name,sha256:file.sha256,storage_key:'demo-browser-only',created_at:now()};
-  (data.resumes||=[]).unshift(version);save(data);
-  return {created:true,message:'Resume version attached to the existing candidate. No duplicate candidate was created.',data:{candidate_id:candidateId,resume_version_id:String(version.id)}};
+  if((data.resumes||[]).some(r=>r.sha256===sha256))throw new Error('This exact resume has already been uploaded.');
+  const version={id:id(),candidate_id:candidateId,original_filename:file.name,sha256,storage_key:'demo-indexeddb',mime_type:file.name.toLowerCase().endsWith('.pdf')?'application/pdf':'application/vnd.openxmlformats-officedocument.wordprocessingml.document',file_size:file.size,created_at:now()};
+  await saveDemoResumeFile(version.id,file);
+  try {
+    const latest=store();
+    if(!latest.candidates.some(r=>r.id===candidateId))throw new Error('Candidate was deleted before resume attachment completed.');
+    if((latest.resumes||[]).some(r=>r.sha256===sha256))throw new Error('This resume has already been attached.');
+    (latest.resumes||=[]).unshift(version);save(latest);
+  } catch(error){await removeDemoResumeFiles([version.id]).catch(()=>undefined);throw error;}
+  return {created:true,message:'Resume saved and attached to the existing candidate in this browser.',data:{candidate_id:candidateId,resume_version_id:String(version.id)}};
 }

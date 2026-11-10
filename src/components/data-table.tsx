@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle, Download, Edit3, FileText, Plus, Search, Trash2, UploadCloud, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Download, Edit3, Eye, FileText, Plus, Search, Trash2, UploadCloud, X } from 'lucide-react';
 import { CATALOG, type ResourceDefinition, type Field } from '@/lib/catalog';
 import { formatDate, friendly, requestJson, toInputDate } from '@/lib/client-api';
 import { attachDemoResume, isDemoClient, saveDemoResumeCandidate } from '@/lib/demo-client';
+import { loadDemoResumeFile } from '@/lib/demo-resume-storage';
 import { ResumeDropzone, type Duplicate, type Extraction, type Row } from './resume-upload';
 import { useCrmConfig } from './hr/use-crm-config';
 import { useCurrentUser } from './workspace-shell';
@@ -153,7 +154,7 @@ function CandidateIntake({initialTab,onClose,onSaved}:{initialTab:'manual'|'resu
       const values={...form,skills:String(form.skills||'').split(',').map(s=>s.trim()).filter(Boolean),
         experience_years:num(form.experience_years),expected_ctc:num(form.expected_ctc),source:'resume'};
       let out:{duplicate?:boolean;message?:string;existing_candidate_id?:string|null;existing_candidate_name?:string|null};
-      if(isDemoClient())out=saveDemoResumeCandidate(values,{name:upload.file.name,sha256:upload.sha256},owner());
+      if(isDemoClient())out=await saveDemoResumeCandidate(values,upload.file,upload.sha256,owner());
       else {
         const response=await fetch('/api/v1/resumes',{method:'POST',body:body(upload.file,{fields:JSON.stringify(values)})});
         out=await response.json();
@@ -168,7 +169,7 @@ function CandidateIntake({initialTab,onClose,onSaved}:{initialTab:'manual'|'resu
     if(!upload||!duplicate?.existing_candidate_id)return;
     setBusy(true);setError('');
     try {
-      if(isDemoClient())attachDemoResume(duplicate.existing_candidate_id,{name:upload.file.name,sha256:upload.sha256});
+      if(isDemoClient())await attachDemoResume(duplicate.existing_candidate_id,upload.file,upload.sha256);
       else {
         const response=await fetch('/api/v1/resumes',{method:'POST',body:body(upload.file,{candidate_id:duplicate.existing_candidate_id})});
         if(!response.ok){const p=await response.json().catch(()=>({}));throw new Error(String(p.error||p.message||'Unable to attach resume'));}
@@ -240,7 +241,30 @@ function RecordDetail({resource,row,onClose,onEdit,onComplete,onLog,onConvert,on
   const cfg=useCrmConfig();
   const [activities,setActivities]=useState<Row[]>([]);
   const [resumes,setResumes]=useState<Row[]>([]);
+  const [resumeBusy,setResumeBusy]=useState<string|null>(null);
+  const [resumeError,setResumeError]=useState('');
   const targetType=resource==='company-leads'?'company_leads':resource;
+  async function openDemoResume(file:Row,download:boolean){
+    const filename=String(file.original_filename||'candidate-resume.pdf');
+    const isPdf=/\.pdf$/i.test(filename);
+    // Open synchronously within the click so browser popup blockers permit the preview.
+    const preview=!download&&isPdf?window.open('about:blank','_blank'):null;
+    if(preview)preview.opener=null;
+    setResumeBusy(String(file.id));setResumeError('');
+    try {
+      const saved=await loadDemoResumeFile(String(file.id));
+      if(!saved)throw new Error('This resume was added before browser file saving was enabled (or browser data was cleared). Please upload the file again.');
+      const mime=isPdf?'application/pdf':'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      const url=URL.createObjectURL(new Blob([saved],{type:mime}));
+      if(preview){preview.location.replace(url);setTimeout(()=>URL.revokeObjectURL(url),120_000);}
+      else {
+        const link=document.createElement('a');link.href=url;link.download=filename;
+        document.body.append(link);link.click();link.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),10_000);
+      }
+    } catch(error){preview?.close();setResumeError(error instanceof Error?error.message:'Unable to open resume');}
+    finally{setResumeBusy(null);}
+  }
   useEffect(()=>{
     if(['company-leads','candidates','applications'].includes(resource))
       requestJson<{data:Row[]}>(`/api/v1/activities?target_type=${targetType}&target_id=${row.id}`).then(v=>setActivities(v.data)).catch(()=>{});
@@ -248,7 +272,7 @@ function RecordDetail({resource,row,onClose,onEdit,onComplete,onLog,onConvert,on
   },[resource,row.id,targetType]);
   return <div className="modal-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}><div className="detail-drawer" role="dialog" aria-modal="true"><div className="modal-header"><div><p className="eyebrow">{def.singular.toUpperCase()} / 360 VIEW</p><h2>{createLabel(resource,row)}</h2><p>Record details and immutable activity</p></div><button className="icon-only" onClick={onClose}><X size={20}/></button></div>
     <div className="detail-content"><div className="detail-field-grid">{def.fields.filter(field=>field.name!=='target_id').map(field=><div key={field.name}><small>{field.label}</small><strong>{field.type==='datetime-local'||field.type==='date'?formatDate(row[field.name],field.type==='datetime-local'):(field.name==='stage'||field.name==='priority'||field.name==='source')?cfg.label(resource,field.name,row[field.name]):friendly(row[field.name])}</strong></div>)}{cfg.customFields(resource).map(d=>{const raw=((row.custom as Row|undefined)||{})[d.field_key];return <div key={`custom-${d.field_key}`}><small>{d.label}</small><strong>{raw===undefined||raw===null||raw===''?'—':d.field_type==='date'?formatDate(raw):String(raw)}</strong></div>;})}</div>
-      {resource==='candidates'&&<section className="detail-section"><h3>Resume Versions</h3>{resumes.length?resumes.map((file,index)=>{const label=<><FileText size={17}/>v{resumes.length-index} · {String(file.original_filename)} <small>{formatDate(file.created_at,true)}</small></>;return isDemoClient()?<span key={String(file.id)} className="file-link">{label} <small>(demo: file not stored)</small></span>:<a key={String(file.id)} className="file-link" href={`/api/v1/resumes/${file.id}/download`} target="_blank" rel="noreferrer">{label} <Download size={16}/></a>;}):<p>No resume uploaded yet.</p>}</section>}
+      {resource==='candidates'&&<section className="detail-section"><h3>Saved Resumes</h3><p className="muted">{isDemoClient()?'Files are saved in this browser only. Clearing site data removes them.':'Files are held in private storage and linked to this candidate.'}</p>{resumeError&&<div className="alert danger" role="alert">{resumeError}</div>}{resumes.length?resumes.map((file,index)=>{const isPdf=/\.pdf$/i.test(String(file.original_filename));const label=<><FileText size={17}/>v{resumes.length-index} · {String(file.original_filename)} <small>{formatDate(file.created_at,true)}</small></>;return <div key={String(file.id)} className="file-link resume-file-row"><span className="resume-file-name">{label}</span><span className="resume-file-actions">{isDemoClient()?<>{isPdf&&<button type="button" className="btn ghost small" disabled={resumeBusy===String(file.id)} onClick={()=>void openDemoResume(file,false)}><Eye size={15}/> Open</button>}<button type="button" className="btn soft small" disabled={resumeBusy===String(file.id)} onClick={()=>void openDemoResume(file,true)}><Download size={15}/> {resumeBusy===String(file.id)?'Loading…':'Download'}</button></>:<>{isPdf&&<a className="btn ghost small" href={`/api/v1/resumes/${file.id}/download?view=1`} target="_blank" rel="noreferrer"><Eye size={15}/> Open</a>}<a className="btn soft small" href={`/api/v1/resumes/${file.id}/download`}><Download size={15}/> Download</a></>}</span></div>;}):<p>No resume uploaded yet. Use Upload Resume to create or attach a candidate file.</p>}</section>}
       {['company-leads','candidates','applications'].includes(resource)&&<section className="detail-section"><h3>Follow-up & Communication History</h3>{activities.length?activities.map(a=><div key={String(a.id)} className="activity-entry"><b>{friendly(a.channel)} · {friendly(a.outcome)}</b><small>{String(a.employee_name)} · {formatDate(a.created_at,true)}</small><p>{String(a.notes||'No notes')}</p></div>):<p>No logged activities yet.</p>}</section>}
     </div><div className="modal-footer"><button className="btn ghost" onClick={onClose}>Close</button>{resource==='followups'&&row.status==='pending'&&<button className="btn soft" onClick={onComplete}><CheckCircle size={16}/> Complete</button>}{['company-leads','candidates','applications'].includes(resource)&&<button className="btn soft" onClick={onLog}>Log Contact</button>}{resource==='company-leads'&&row.stage!=='converted'&&<button className="btn soft" onClick={onConvert}>Convert to Client</button>}{onDelete&&<button className="btn ghost" onClick={onDelete}><Trash2 size={16}/> Delete Lead</button>}<button className="btn primary" onClick={onEdit}><Edit3 size={16}/> Edit</button></div>
   </div></div>;
