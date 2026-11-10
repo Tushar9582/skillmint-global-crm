@@ -6,7 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { POST as login } from '../src/app/api/auth/login/route';
 import { POST as logout } from '../src/app/api/auth/logout/route';
 import { api } from '../src/lib/http';
-import { getActor, isDemoModeRequested, isDevDemoMode, isPublicDemoMode, isStagingDemoMode, resolveDemoActor } from '../src/lib/auth';
+import { assertSameOrigin, getActor, isDemoModeRequested, isDevDemoMode, isPublicDemoMode, isStagingDemoMode, resolveDemoActor } from '../src/lib/auth';
+import { POST as parseDemoResume } from '../src/app/api/dev/parse-resume/route';
 
 const password = randomBytes(24).toString('base64url');
 const secret = 'local-test-secret-0123456789-abcdef';
@@ -132,6 +133,35 @@ test('public demo fails closed if cloud credentials exist or the preview flag is
   assert.equal(isPublicDemoMode(), false);
   assert.equal(isStagingDemoMode(), false);
   assert.equal(await getActor(), null);
+});
+
+test('Netlify public demo permits its trusted site origin when server request URL is internal', async () => {
+  configureStaging();
+  process.env.DEMO_PUBLIC_PREVIEW='true';
+  const oldUrl=process.env.URL;
+  const oldSiteName=process.env.SITE_NAME;
+  try {
+    process.env.APP_ORIGIN='https://internal-runtime.example';
+    process.env.URL='https://skillmintcrm.netlify.app';
+    process.env.SITE_NAME='skillmintcrm';
+    const browserUrl='https://skillmintcrm.netlify.app';
+    const internal='https://internal-runtime.example/api/dev/parse-resume';
+    assert.doesNotThrow(()=>assertSameOrigin(new NextRequest(internal,{method:'POST',headers:{origin:browserUrl}})));
+    assert.throws(()=>assertSameOrigin(new NextRequest(internal,{method:'POST',headers:{origin:'https://untrusted.example'}})),/Invalid origin/);
+
+    const form=new FormData();
+    form.set('file',new File(['not a resume'],'not-a-resume.txt'));
+    const response=await parseDemoResume(new NextRequest(internal,{method:'POST',headers:{origin:browserUrl},body:form}));
+    assert.equal(response.status,400,'a bad file should reach validation instead of being rejected by origin checks');
+
+    delete process.env.DEMO_MODE;
+    assert.throws(()=>assertSameOrigin(new NextRequest(internal,{method:'POST',headers:{origin:browserUrl}})),/Invalid origin/,
+      'normal production must not trust the demo-only allowlist');
+  } finally {
+    if(oldUrl===undefined)delete process.env.URL;else process.env.URL=oldUrl;
+    if(oldSiteName===undefined)delete process.env.SITE_NAME;else process.env.SITE_NAME=oldSiteName;
+    configureStaging();
+  }
 });
 
 test('restore environment after the test file', () => {
