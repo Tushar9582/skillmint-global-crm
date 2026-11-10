@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Activity, CalendarDays, CheckCircle2, Clock3, PhoneCall, UsersRound, Video } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock3, PhoneCall, UsersRound, Video } from 'lucide-react';
 import { formatDate, requestJson } from '@/lib/client-api';
 import type { RecruiterProgress } from '@/lib/lead-operations';
 
@@ -31,13 +31,12 @@ export function RecruiterProgressPanel(){
   return <section className="panel recruiter-progress" aria-label="Recruiter daily progress report">
     <div className="panel-header recruiter-progress-heading"><div><p className="eyebrow">ADMIN ACTIVITY MONITOR</p>
       <h2>Recruiter Daily Progress</h2><p>Live workloads, calls, meetings, stage movement and completed follow-ups.</p></div>
-      <Link className="btn soft" href="/activities"><Activity size={16}/> Activity History</Link>
+      <Link className="btn soft" href="/employees"><UsersRound size={16}/> Employee Management</Link>
     </div>
     <div className="recruiter-progress-toolbar">
       <div className="recruiter-progress-dates"><label><span>From</span><input type="date" className="form-input" value={from} onChange={e=>setFrom(e.target.value)}/></label>
         <label><span>To</span><input type="date" className="form-input" value={to} onChange={e=>setTo(e.target.value)}/></label></div>
       <div className="recruiter-periods" aria-label="Report period shortcuts"><button type="button" onClick={()=>setPreset(1)}>Today</button><button type="button" onClick={()=>setPreset(7)}>Last 7 Days</button><button type="button" onClick={()=>setPreset(30)}>Last 30 Days</button></div>
-      <Link href="/employees" className="text-link">Manage Recruiters</Link>
     </div>
     {error&&<div className="alert danger" role="alert">{error}</div>}
     <div className="recruiter-progress-summary">
@@ -57,6 +56,6 @@ export function RecruiterProgressPanel(){
           <td>{person.last_activity_at?formatDate(person.last_activity_at,true):'—'}</td>
         </tr>):<tr><td colSpan={9} className="table-empty">No team members available.</td></tr>}</tbody></table>
     </div>
-    <div className="recruiter-progress-note"><CalendarDays size={16}/><span>Assigned counts show current ownership. Activities, meetings, stage updates and completions are counted within the chosen date range. <Link href="/daily-report">Open daily reports</Link> for individual notes.</span></div>
+    <div className="recruiter-progress-note"><CalendarDays size={16}/><span>Assigned counts show current ownership. Activities, meetings, stage updates and completions are counted within the chosen date range.</span></div>
   </section>;
 }

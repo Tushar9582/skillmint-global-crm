@@ -703,3 +703,15 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.nav-scroll::-webkit-scrollbar,
   .lead-stage-update>div{flex-wrap:wrap}
   .lead-stage-update button{width:100%}
 }
+
+/* Recruitment essentials: one clear sidebar and contextual setup where needed. */
+.sidebar .nav-group-static{cursor:default;user-select:none;padding-bottom:9px}
+.sidebar .nav-group-static:hover{background:transparent}
+.crm-prerequisite-note{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:15px 18px;margin-bottom:18px;border:1px solid #d4e2f3;border-radius:12px;background:#eef5fd;color:#506e8c;font-size:13px;line-height:1.5}
+.crm-prerequisite-note strong{color:#153d69}
+.crm-prerequisite-note a{color:#1a548f;font-weight:800;white-space:nowrap;text-decoration:underline;text-underline-offset:3px}
+.crm-form-guidance{grid-column:1/-1;display:flex;align-items:flex-start;flex-direction:column;gap:8px;padding:16px 18px;border:1px solid #d5e3f5;border-radius:12px;background:#f2f7fd;color:#5f7895;font-size:13px;line-height:1.5}
+.crm-form-guidance strong{font-size:14px;color:#163f6d}
+.crm-form-guidance>div{display:flex;flex-wrap:wrap;gap:14px;margin-top:3px}
+.crm-form-guidance a{color:#1b5895;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+@media(min-width:1251px){.module-directory-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}

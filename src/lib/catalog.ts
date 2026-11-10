@@ -61,7 +61,7 @@ export const CATALOG:Record<string,ResourceDefinition>={
     columns:['title','client_name','location','openings','stage','owner_name'],
   },
   candidates:{
-    key:'candidates',table:'candidates',singular:'Candidate Lead',plural:'Candidates & Resume Bank',icon:'users',
+    key:'candidates',table:'candidates',singular:'Candidate Lead',plural:'Lead Bank & Resumes',icon:'users',
     description:'One candidate identity with resume versions, screening and application history.',
     stages:['new','assigned','contact_attempted','connected','screened','eligible','not_eligible','on_hold','placed','rejected'],
     fields:[text('full_name','Candidate Full Name',true),{name:'email',label:'Email Address',type:'email'},

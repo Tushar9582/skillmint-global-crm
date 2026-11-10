@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle, Download, Edit3, Eye, FileText, Plus, Search, Trash2, UploadCloud, UserRoundPlus, X } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, ArrowRight, CheckCircle, Download, Edit3, Eye, FileText, Plus, Search, Trash2, UploadCloud, X } from 'lucide-react';
 import { CATALOG, type ResourceDefinition, type Field } from '@/lib/catalog';
 import { formatDate, friendly, requestJson, toInputDate } from '@/lib/client-api';
 import { attachDemoResume, isDemoClient, saveDemoResumeCandidate } from '@/lib/demo-client';
@@ -110,6 +111,9 @@ function RecordForm({resource,current,onClose,onSaved,embedded=false}:{resource:
     finally{setBusy(false);}
   }
   const formEl=<form onSubmit={save}><div className="modal-content form-grid">
+        {!current&&resource==='applications'&&<div className="crm-form-guidance"><strong>Candidate + Job = Application</strong><span>Select an existing candidate and a job requirement below. Missing one?</span><div><Link href="/candidates?new=1">Add Candidate</Link><Link href="/jobs?new=1">Add Job Requirement</Link></div></div>}
+        {!current&&resource==='jobs'&&<div className="crm-form-guidance"><strong>Connect the vacancy to an employer</strong><span>Each job needs a client account. Use an existing client below, or create one.</span><div><Link href="/clients?new=1">Create Client Account</Link><Link href="/company-leads">Go to Company Leads</Link></div></div>}
+        {!current&&resource==='interviews'&&<div className="crm-form-guidance"><strong>Schedule for an application</strong><span>Select a candidate application below. You can create one first if needed.</span><div><Link href="/applications?new=1">Add Application</Link></div></div>}
         <FormFields fields={fields} form={form} setForm={setForm} lookups={fullLookups}/>
         {customDefs.map(d=>{const value=((form.custom as Row|undefined)||{})[d.field_key];const set=(next:string)=>setForm(p=>({...p,custom:{...((p.custom as Row|undefined)||{}),[d.field_key]:next}}));
           return <label className="form-field" key={d.field_key}><span>{d.label}{d.required?' *':''}</span>{d.field_type==='select'?<select className="form-input" required={d.required} value={String(value??'')} onChange={e=>set(e.target.value)}><option value="">Select {d.label}</option>{d.options.map(o=><option key={o} value={o}>{o}</option>)}</select>:<input className="form-input" required={d.required} type={d.field_type==='number'?'number':d.field_type==='date'?'date':'text'} step={d.field_type==='number'?'any':undefined} value={String(value??'')} onChange={e=>set(e.target.value)}/>}</label>;})}
@@ -395,6 +399,7 @@ export function DataTablePage({resource}:{resource:string}) {
     setBulkBusy(true);setError('');try{await Promise.all(ids.map(id=>requestJson(`/api/v1/${resource}/${id}`,{method:'DELETE'})));setSelected(null);setChecked([]);await load();}catch(err){setError(err instanceof Error?err.message:'Unable to delete lead.');}finally{setBulkBusy(false);}
   }
   return <div className="page-shell"><div className="page-heading"><div><p className="eyebrow">SKILLMINT / WORKSPACE</p><h1>{def.plural}</h1><p>{def.description}</p></div><div className="heading-actions">{user.role==='admin'&&<a href={`/api/v1/export?resource=${resource}`} className="btn ghost"><Download size={16}/> Export CSV</a>}<button onClick={()=>resource==='candidates'?setIntake('manual'):setEdit(null)} className="btn primary"><Plus size={16}/> Add {def.singular}</button>{resource==='candidates'&&<button onClick={()=>setIntake('resume')} className="btn soft"><UploadCloud size={16}/> Upload Resume</button>}</div></div>
+    {resource==='applications'&&<div className="crm-prerequisite-note"><span><strong>Application flow:</strong> Choose a candidate and a job requirement, then track the application and schedule an interview.</span><Link href="/jobs?new=1">+ Add Job Requirement</Link></div>}
     <div className="toolbar panel"><div className="toolbar-search"><Search size={17}/><input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder={`Search ${def.plural.toLowerCase()}…`}/></div>
       {(()=>{const stages=cfg.stagesFor(resource,def.stages);return stages&&<select value={stage} onChange={e=>{setStage(e.target.value);setPage(1);}}><option value="">All Stages</option>{stages.map(v=><option key={v} value={v}>{cfg.label(resource,'stage',v)}</option>)}</select>;})()}
       <span className="record-count">{rows.length} records on this page</span></div>
