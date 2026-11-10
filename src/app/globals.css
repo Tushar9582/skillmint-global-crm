@@ -558,3 +558,43 @@ tbody tr:hover td{background:#f7fafe}
 .module-link-copy small{color:#697f98}
 .module-link-arrow{color:#4d7cab}
 @media(max-width:650px){.sidebar .nav-link{font-size:14px}.workspace-hero{padding:30px 24px}.workspace-choice-card{padding:24px}.metric-card{border-radius:15px}}
+
+/* Candidate bank: keep the header controls and table records aligned. */
+.page-heading{flex-wrap:wrap;align-items:flex-start}
+.page-heading>div:first-child{flex:1 1 390px;min-width:0}
+.heading-actions{flex:0 0 auto;flex-wrap:nowrap;gap:10px;max-width:100%}
+.heading-actions .btn{white-space:nowrap;justify-content:center}
+.candidate-table{min-width:1140px}
+.candidate-table th,.candidate-table td{white-space:nowrap;vertical-align:middle}
+.candidate-table td{height:66px}
+.skills-preview{display:block;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.table-row-actions{display:inline-flex;align-items:center;gap:14px;white-space:nowrap}
+.table-row-actions .table-action+.table-action{margin-left:0}
+
+/* The wide dialog itself scrolls; nested form panes cannot trap the scroll. */
+.modal.wide{display:block;overflow-x:hidden;overflow-y:auto;max-height:calc(100dvh - 40px);overscroll-behavior:contain}
+.modal.wide .modal-content{overflow:visible}
+.modal.wide>.modal-header{position:sticky;top:0;z-index:5;background:#fff}
+.modal.wide .modal-footer{position:sticky;bottom:0;z-index:4;flex-wrap:wrap}
+
+/* Keep scrolling functional while hiding distracting scrollbar tracks. */
+html,body,.nav-scroll,.table-scroll,.modal,.modal-content,.detail-content,.detail-drawer{
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+html::-webkit-scrollbar,body::-webkit-scrollbar,.nav-scroll::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar,.modal::-webkit-scrollbar,.modal-content::-webkit-scrollbar,
+.detail-content::-webkit-scrollbar,.detail-drawer::-webkit-scrollbar{display:none;width:0;height:0}
+
+@media(max-width:1200px){
+  .page-heading{gap:18px}
+  .page-heading>div:first-child{flex-basis:100%}
+  .heading-actions{width:100%;justify-content:flex-start;overflow-x:auto;scrollbar-width:none}
+  .heading-actions::-webkit-scrollbar{display:none}
+}
+@media(max-width:650px){
+  .heading-actions{gap:8px}
+  .heading-actions .btn{flex:0 0 auto;padding:10px 12px;font-size:12px}
+  .modal.wide{width:100%;height:100dvh;max-height:100dvh;border-radius:0}
+  .modal.wide .modal-footer{gap:8px}
+}
