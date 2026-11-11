@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowRight, CalendarClock, CircleAlert, BriefcaseBusiness, Users, Layers3, CheckCircle2, Plus, ChevronRight,
-  IdCard, CalendarDays, Clock3, FileText, UserRoundCog, ShieldCheck, type LucideIcon } from 'lucide-react';
+  IdCard, CalendarDays, Clock3, FileText, Sparkles, UserRoundCog, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { requestJson, formatDate } from '@/lib/client-api';
 import { useCurrentUser } from './workspace-shell';
 import { RecruiterProgressPanel } from './recruiter-progress-panel';
@@ -25,6 +25,7 @@ type ModuleLink={href:string;title:string;detail:string;icon:LucideIcon;adminOnl
 const crmLinks:ModuleLink[]=[
   {href:'/company-leads',title:'Company Leads',detail:'Find employers, update status and assign ownership',icon:BriefcaseBusiness},
   {href:'/candidates',title:'Lead Bank & Resumes',detail:'Add candidates, upload resumes and view saved files',icon:IdCard},
+  {href:'/ai-resume-builder',title:'AI Resume Builder',detail:'Create, improve, preview and export polished resumes',icon:Sparkles},
   {href:'/followups',title:'Follow-up Center',detail:'Plan calls, meetings and next actions',icon:Clock3},
   {href:'/applications',title:'Applications',detail:'Match candidates with jobs and track progress',icon:FileText},
   {href:'/interviews',title:'Interviews',detail:'Schedule interviews, record feedback and outcomes',icon:CalendarDays},
@@ -35,7 +36,7 @@ const crmLinks:ModuleLink[]=[
 function ModuleLinks(){
   const user=useCurrentUser();
   return <section className="module-directory" aria-label="Lead management modules">
-    <div className="module-section-heading"><div><span className="eyebrow">YOUR WORKSPACE</span><h2>{user.role==='admin'?'7 Core Recruitment Tools':'Recruitment Essentials'}</h2><p>Start with company or candidate leads, assign a recruiter, follow up, then progress through applications and interviews.</p></div></div>
+    <div className="module-section-heading"><div><span className="eyebrow">YOUR WORKSPACE</span><h2>{user.role==='admin'?'Recruitment Tools':'Recruitment Essentials'}</h2><p>Start with company or candidate leads, build professional resumes, assign follow-ups and progress through applications and interviews.</p></div></div>
     <div className="module-directory-grid">{crmLinks.filter(link=>!link.adminOnly||user.role==='admin').map(item=>{const Icon=item.icon;return <Link href={item.href} key={item.href} className="module-link-card"><span className="module-link-icon"><Icon size={22}/></span><span className="module-link-copy"><strong>{item.title}</strong><small>{item.detail}</small></span><ChevronRight size={18} className="module-link-arrow"/></Link>;})}</div>
   </section>;
 }
@@ -72,6 +73,7 @@ export function DashboardView(){
           <Link href="/company-leads?new=1"><BriefcaseBusiness size={20}/><div><b>Create company lead</b><small>Register an employer prospect</small></div><ChevronRight size={16}/></Link>
           <Link href="/candidates?new=1"><Users size={20}/><div><b>Add candidate manually</b><small>Enter candidate details in a form</small></div><ChevronRight size={16}/></Link>
           <Link href="/candidates?mode=resume"><FileText size={20}/><div><b>Upload candidate resume</b><small>Extract details and save the file with the lead</small></div><ChevronRight size={16}/></Link>
+          <Link href="/ai-resume-builder"><Sparkles size={20}/><div><b>Create professional resume</b><small>Build, enhance and export a candidate resume</small></div><ChevronRight size={16}/></Link>
           <Link href="/followups?new=1"><CalendarClock size={20}/><div><b>Schedule a follow-up</b><small>Track your next contact</small></div><ChevronRight size={16}/></Link>
         </div>
       </div>

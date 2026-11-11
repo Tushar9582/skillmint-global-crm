@@ -2,6 +2,7 @@
 
 import { CATALOG } from '@/lib/catalog';
 import { DashboardView } from './dashboard';
+import { AiResumeBuilderPage } from './ai-resume-builder';
 import { DataTablePage } from './data-table';
 import { EmployeesPage, HandoverPage, EmployeeProfilePage } from './team';
 import { BillingPage } from './hr/finance';
@@ -11,6 +12,7 @@ import { DailyReportPage, ReportsPage, AuditPage, ActivityHistoryPage, Notificat
 export function SectionView({section}:{section:string}) {
   if(CATALOG[section])return <DataTablePage resource={section}/>;
   switch(section){
+    case 'ai-resume-builder':return <AiResumeBuilderPage/>;
     case 'leads-dashboard':return <DashboardView/>;
     case 'billing':return <BillingPage/>;
     case 'crm-settings':return <CrmConfigPage/>;

@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { SectionView } from '@/components/sections';
 
-const PAGES=new Set(['company-leads','clients','jobs','candidates','applications',
+const PAGES=new Set(['company-leads','clients','jobs','candidates','ai-resume-builder','applications',
   'leads-dashboard',
   'interviews','followups','activities','employees','handover','reports','notifications','audit',
   'imports','duplicate-reviews','daily-report','profile','billing','crm-settings']);

@@ -99,24 +99,26 @@ Copy-Item .env.example .env
 | `/login` | Admin / employee sign in |
 | `/dashboard` | Role-aware KPI dashboard and work queue |
 | `/company-leads` | Employer leads and pipeline |
-| `/clients` | Employer/client accounts |
-| `/jobs` | Job requirements and openings |
-| `/candidates` | Candidate leads and resume bank |
-| `/candidates` | Candidates & Resume Bank (manual entry or resume upload) |
-| `/resume-upload` | Redirects to `/candidates?mode=resume` |
+| `/candidates` | Lead bank: manual candidate entry and saved resume upload |
+| `/ai-resume-builder` | Resume editor, saved browser drafts, candidate import, live A4 preview and PDF printing |
 | `/applications` | Candidate-job matching and recruitment stages |
 | `/interviews` | Interview planning and outcomes |
 | `/followups` | Follow-up center and completion logging |
-| `/activities` | Activity history |
-| `/daily-report` | Employee work report and plans |
-| `/notifications` | Assignment and follow-up notifications |
-| `/employees` | Admin registration, 360° history and password resets |
-| `/handover` | Admin employee exit and reassignment |
-| `/duplicate-reviews` | Admin candidate duplicate decisions |
-| `/imports` | Admin CSV / XLSX lead import |
-| `/reports` | Admin report and performance summaries |
-| `/audit` | Admin audit trail |
-| `/profile` | Profile and password update |
+| `/employees` | Admin recruiter registration, lead management, progress and 360° history |
+| `/duplicate-reviews` | Admin duplicate candidate resume decisions |
+
+Legacy routes for linked client/job setup, activity history and existing account workflows remain available for compatibility but are hidden from the streamlined sidebar. A new application links to job requirement setup, and that setup links to client account creation.
+
+### AI Resume Builder configuration
+
+The sidebar's **AI Resume Builder** works without an external key for manual creation, candidate-field import, factual offline starter summaries, multiple browser-local drafts, live preview, and browser **Print → Save as PDF**. Offline templates are clearly distinguished from real AI rewriting. These drafts are **not** yet synchronized to Supabase/PostgreSQL or attached automatically to the candidate's uploaded resume versions; they live in that user's current browser and may be lost when browser data is cleared.
+
+For authenticated, database-backed CRM users, set the following **server-only** environment variables on the production deployment:
+
+- `OPENAI_API_KEY=<your private API key>`
+- `OPENAI_RESUME_MODEL=gpt-4o-mini` (or another model supporting Responses structured outputs)
+
+The **Improve with AI** button sends the entered professional summary, work experience, skills, and optional job description to the configured provider, then shows a reviewable draft. It never auto-applies changes. Users must check facts before distributing a resume. Do not configure paid AI access on the public demo site: it intentionally disables authenticated database-backed POST routes, including this AI endpoint. Provision provider billing, privacy notices, and production gateway rate limiting before enabling live usage.
 
 ## Temporary Netlify Demo / Staging Login
 

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Role } from '@/lib/hr/core';
 import { Bell, BriefcaseBusiness, CalendarDays, Clock3, LayoutDashboard, LogOut, Menu,
-  Search, ShieldCheck, Users, UserRoundCog, Workflow, X, type LucideIcon } from 'lucide-react';
+  Search, ShieldCheck, Sparkles, Users, UserRoundCog, Workflow, X, type LucideIcon } from 'lucide-react';
 import { DEMO_PEOPLE, getDemoRole, setDemoRole } from '@/lib/hr/demo-hr';
 import '@/lib/hr/demo-all';
 import { ROLE_LABELS, ROLES } from '@/lib/hr/core';
@@ -15,11 +15,12 @@ const CurrentUserContext=createContext<CurrentUser|null>(null);
 export function useCurrentUser(){const user=useContext(CurrentUserContext);if(!user)throw new Error('User context missing');return user;}
 
 type NavItem={href:string;label:string;icon:LucideIcon;adminOnly?:boolean};
-// Keep prerequisite and reporting routes available for existing records, but show only
-// the seven recruitment tools requested by the team in the primary navigation.
+// Keep prerequisite and reporting routes available for existing records, while
+// presenting just the core recruitment tools and the dedicated AI resume studio.
 const navItems:NavItem[]=[
   {href:'/company-leads',label:'Company Leads',icon:BriefcaseBusiness},
   {href:'/candidates',label:'Lead Bank & Resumes',icon:Users},
+  {href:'/ai-resume-builder',label:'AI Resume Builder',icon:Sparkles},
   {href:'/applications',label:'Applications',icon:Workflow},
   {href:'/interviews',label:'Interviews',icon:CalendarDays},
   {href:'/followups',label:'Follow-up Center',icon:Clock3},
