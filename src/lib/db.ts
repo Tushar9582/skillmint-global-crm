@@ -1,9 +1,10 @@
 import { Pool, type PoolClient, type QueryResultRow } from 'pg';
+import { postgresConnectionOptions } from './db-config';
 
 const globalPool = globalThis as typeof globalThis & { skillmintPool?: Pool };
 
 export const pool = globalPool.skillmintPool ?? new Pool({
-  connectionString: process.env.DATABASE_URL,
+  ...postgresConnectionOptions(),
   max: Math.min(Math.max(Number(process.env.DB_POOL_MAX || 3),1),10),
   allowExitOnIdle: true,
   idleTimeoutMillis: 30000,

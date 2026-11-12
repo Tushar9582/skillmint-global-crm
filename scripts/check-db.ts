@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { postgresConnectionOptions } from '../src/lib/db-config';
 
 const requiredTables = [
   'organizations', 'users', 'sessions', 'company_leads', 'clients',
@@ -13,7 +14,7 @@ async function main(): Promise<void> {
   }
 
   const pool = new Pool({
-    connectionString,
+    ...postgresConnectionOptions(),
     max: 1,
     connectionTimeoutMillis: 12000,
     idleTimeoutMillis: 1000,

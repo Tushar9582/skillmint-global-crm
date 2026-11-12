@@ -68,3 +68,40 @@ The app's private **`.env.local`** file is used by Next.js, and `npm run db:chec
 ```
 
 This project has already had its production schema applied in Supabase; **do not rerun `db:migrate` on the existing project**. `ADMIN_PASSWORD` is only needed to seed locally and is not needed on Netlify. Netlify requires its **own** private environment variables, and all demo flags must be `false` before production login will work.
+
+## Netlify login 500 caused by missing TLS certificate trust
+
+A local Windows certificate path in `NODE_EXTRA_CA_CERTS` **is not available on Netlify**.
+The production API uses the same `pg` PostgreSQL driver as local development. A
+`self-signed certificate in certificate chain` error in Netlify runtime logs means
+the Node process cannot verify Supabase's certificate.
+
+The backend now supports **`SUPABASE_CA_CERT_BASE64`** in the Netlify Functions
+environment. This is a **public certificate**, not a database secret.
+Download `prod-ca-2021.crt` from your **Supabase project → Database Settings →
+SSL Configuration**. In PowerShell, run:
+
+```powershell
+$cert = "$env:USERPROFILE\Downloads\prod-ca-2021.crt"
+if (-not (Test-Path $cert)) { throw "Supabase certificate not found" }
+[Convert]::ToBase64String([System.IO.File]::ReadAllBytes($cert)) | Set-Clipboard
+```
+
+In Netlify → Environment variables, add `SUPABASE_CA_CERT_BASE64`, paste your
+clipboard value, save, and trigger a new deploy. Keep the existing *complete*,
+up-to-date Supabase Transaction Pooler `DATABASE_URL` (port 6543) and
+`APP_ORIGIN=https://skillmintcrm.netlify.app`. All `DEMO_*` flags must be
+`false`. The code removes the URL's `sslmode` only when this PEM certificate is
+configured, and explicitly enables **CA + hostname verification** with
+`rejectUnauthorized: true`. It never disables SSL verification.
+
+If login still returns 500, check Netlify **Cloud compute → Functions → runtime logs**
+(or **Cloud compute → Server → Logs**, depending on runtime) for the
+`[login] failed` entry. Distinguish:
+- `password authentication failed`: stale Supabase database password in Netlify
+- `self-signed certificate`: missing/malformed Netlify CA configuration
+- `ENOTFOUND`/`ETIMEDOUT`: incorrect URL or network connectivity
+- `Invalid origin`: incorrectly configured `APP_ORIGIN` (usually HTTP 403)
+
+Do not copy the Windows certificate path into Netlify; use the Base64 value above.
+Do not use `NODE_TLS_REJECT_UNAUTHORIZED=0` or `rejectUnauthorized:false`.
