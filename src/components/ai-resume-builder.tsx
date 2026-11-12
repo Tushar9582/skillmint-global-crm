@@ -77,33 +77,57 @@ export function AiResumeBuilderPage() {
   const demo=isDemoClient();
 
   useEffect(()=>{
-    let existing:ResumeDraft[]=[];
-    try {
-      const parsed:unknown=JSON.parse(localStorage.getItem(storageKey)||'[]');
-      if(Array.isArray(parsed))existing=parsed.filter(isResumeDraft).slice(0,20);
-    }catch{/* Ignore corrupt or unavailable browser storage. */}
-    const initial=existing[0]||createResumeDraft();
-    setDrafts(existing.length?existing:[initial]);setDraft(initial);setReady(true);setSaved(true);
-  },[storageKey]);
+    let cancelled=false;
+    async function loadDrafts(){
+      let existing:ResumeDraft[]=[];
+      if(demo) {
+        try {
+          const parsed:unknown=JSON.parse(localStorage.getItem(storageKey)||'[]');
+          if(Array.isArray(parsed))existing=parsed.filter(isResumeDraft).slice(0,20);
+        }catch{/* Ignore unavailable demo browser storage. */}
+      } else {
+        try {
+          const result=await requestJson<{data:ResumeDraft[]}>('/api/v1/resume-drafts');
+          existing=(result.data||[]).filter(isResumeDraft).slice(0,20);
+        }catch(error) {
+          if(!cancelled)setNotice(error instanceof Error?error.message:'Cloud resume drafts could not be loaded.');
+          if(!cancelled)setReady(false);
+          return;
+        }
+      }
+      if(cancelled)return;
+      const initial=existing[0]||createResumeDraft();
+      setDrafts(existing.length?existing:[initial]);setDraft(initial);setSaved(true);setReady(true);
+    }
+    void loadDrafts();
+    return ()=>{cancelled=true;};
+  },[storageKey,demo]);
 
   useEffect(()=>{
     requestJson<{data:Candidate[]}>('/api/v1/candidates?limit=100')
       .then(result=>setCandidates(result.data||[])).catch(()=>setCandidates([]));
   },[]);
 
-  // Autosave a small, user-scoped draft set in the browser. Real cloud storage is a separate integration.
+  // Demo drafts stay browser-local. Authenticated production drafts are saved to PostgreSQL.
   useEffect(()=>{
     if(!ready)return;
+    let cancelled=false;
     const timer=window.setTimeout(()=>{
-      setDrafts(previous=>{
-        const next=[draft,...previous.filter(item=>item.id!==draft.id)].slice(0,20);
-        try{localStorage.setItem(storageKey,JSON.stringify(next));}catch{/* Browser storage can be full or disabled. */}
-        return next;
-      });
-      setSaved(true);
+      if(demo) {
+        setDrafts(previous=>{
+          const next=[draft,...previous.filter(item=>item.id!==draft.id)].slice(0,20);
+          try{localStorage.setItem(storageKey,JSON.stringify(next));setSaved(true);}
+          catch{setNotice('Browser demo storage is unavailable. Use Print / Save PDF.');}
+          return next;
+        });
+      } else {
+        void requestJson('/api/v1/resume-drafts',{method:'PUT',body:JSON.stringify(draft)})
+          .then(()=>{if(!cancelled){setDrafts(previous=>[draft,...previous.filter(item=>item.id!==draft.id)].slice(0,20));setSaved(true);}})
+          .catch(error=>{if(!cancelled){setSaved(false);setNotice(error instanceof Error?error.message:'Cloud draft save failed.');}});
+      }
     },650);
-    return ()=>window.clearTimeout(timer);
-  },[draft,ready,storageKey]);
+    return ()=>{cancelled=true;window.clearTimeout(timer);};
+  },[draft,ready,storageKey,demo]);
 
   function change<K extends keyof ResumeDraft>(key:K,value:ResumeDraft[K]){
     setDraft(previous=>({...previous,[key]:value,updatedAt:new Date().toISOString()}));
@@ -120,8 +144,15 @@ export function AiResumeBuilderPage() {
   }
   function saveNow(nextDraft=draft){
     const next=[nextDraft,...drafts.filter(item=>item.id!==nextDraft.id)].slice(0,20);
-    try{localStorage.setItem(storageKey,JSON.stringify(next));setSaved(true);setNotice('Draft saved in this browser.');}
-    catch{setNotice('Browser storage is unavailable. Use Print / Save PDF to keep a copy.');}
+    if(demo){
+      try{localStorage.setItem(storageKey,JSON.stringify(next));setSaved(true);setNotice('Draft saved in this browser.');}
+      catch{setNotice('Browser storage is unavailable. Use Print / Save PDF to keep a copy.');}
+    } else {
+      setSaved(false);
+      void requestJson('/api/v1/resume-drafts',{method:'PUT',body:JSON.stringify(nextDraft)})
+        .then(()=>{setSaved(true);setNotice('Resume saved to secure cloud database.');})
+        .catch(error=>{setNotice(error instanceof Error?error.message:'Cloud draft save failed.');});
+    }
     setDrafts(next);
   }
   function selectDraft(id:string){
@@ -133,13 +164,18 @@ export function AiResumeBuilderPage() {
     saveNow();const fresh=createResumeDraft();setDrafts(previous=>[fresh,...previous].slice(0,20));
     setDraft(fresh);setTab('personal');setNotice('New resume draft ready.');
   }
-  function deleteDraft(){
-    if(!window.confirm('Delete this saved resume draft from this browser? This cannot be undone.'))return;
+  async function deleteDraft(){
+    if(!window.confirm('Delete this saved resume draft? This cannot be undone.'))return;
+    if(!demo){
+      try{await requestJson(`/api/v1/resume-drafts?id=${encodeURIComponent(draft.id)}`,{method:'DELETE'});}
+      catch(error){setNotice(error instanceof Error?error.message:'Cloud draft deletion failed.');return;}
+    }
     const remaining=drafts.filter(item=>item.id!==draft.id);
     const next=remaining[0]||createResumeDraft();
     const nextList=remaining.length?remaining:[next];
-    setDrafts(nextList);setDraft(next);setTab('personal');setNotice('Draft removed.');
-    try{localStorage.setItem(storageKey,JSON.stringify(nextList));}catch{}
+    setDrafts(nextList);setDraft(next);setTab('personal');
+    setNotice(demo?'Draft removed from this browser.':'Draft deleted from cloud database.');
+    if(demo)try{localStorage.setItem(storageKey,JSON.stringify(nextList));}catch{}
   }
   function importCandidate(){
     const source=candidates.find(item=>String(item.id)===candidateToImport);
@@ -175,7 +211,7 @@ export function AiResumeBuilderPage() {
   return <div className="page-shell resume-builder-page">
     <div className="page-heading"><div><p className="eyebrow">SKILLMINT / RECRUITMENT STUDIO</p><h1><Sparkles size={28}/> AI Resume Builder</h1><p>Create a polished, ATS-friendly resume from scratch or start with an existing candidate.</p></div>
       <div className="heading-actions"><button className="btn ghost" type="button" onClick={()=>saveNow()}><Save size={16}/>{saved?'Saved':'Save Draft'}</button><button className="btn primary" type="button" onClick={()=>window.print()}><Download size={16}/> Print / Save PDF</button></div></div>
-    <div className="resume-builder-status"><span><Check size={15}/>{demo?'Browser-local demo drafts':'Drafts saved locally in this browser'}</span><span>AI improvements require a configured, authenticated AI service.</span></div>
+    <div className="resume-builder-status"><span><Check size={15}/>{demo?'Browser-local demo drafts':'Private cloud-backed drafts'}</span><span>AI improvements require a configured, authenticated AI service.</span></div>
     <div className="resume-builder-toolbar panel">
       <label><span>My Resume Drafts</span><div className="resume-builder-select"><FileText size={18}/><select aria-label="Saved resume drafts" value={draft.id} onChange={event=>selectDraft(event.target.value)}>{drafts.map(item=><option key={item.id} value={item.id}>{item.fullName.trim()||'Untitled Resume'} · {new Date(item.updatedAt).toLocaleDateString('en-IN')}</option>)}</select><ChevronDown size={15}/></div></label>
       <div className="resume-builder-toolbar-actions"><button className="btn ghost" onClick={newDraft} type="button"><FilePlus2 size={16}/> New Resume</button><button className="btn ghost resume-delete-draft" onClick={deleteDraft} type="button" aria-label="Delete current resume draft"><Trash2 size={16}/></button></div>

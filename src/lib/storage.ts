@@ -3,16 +3,18 @@ import { resolve, dirname, join } from 'node:path';
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-type Driver='local'|'spaces'|'s3';
+type Driver='local'|'spaces'|'s3'|'supabase';
 const driver=(process.env.STORAGE_DRIVER || 'local') as Driver;
 const bucket=process.env.STORAGE_BUCKET || 'skillmint-resumes';
 
 function s3(): S3Client {
-  if(!['spaces','s3'].includes(driver)) throw new Error('Cloud object storage is not configured');
+  if(!['spaces','s3','supabase'].includes(driver)) throw new Error('Cloud object storage is not configured');
+  if(driver==='supabase' && (!process.env.STORAGE_ENDPOINT || !process.env.STORAGE_ACCESS_KEY || !process.env.STORAGE_SECRET_KEY))
+    throw new Error('Supabase S3 endpoint and server-side credentials are required');
   return new S3Client({
     region:process.env.STORAGE_REGION || 'ap-south-1',
     endpoint:process.env.STORAGE_ENDPOINT || undefined,
-    forcePathStyle:driver==='spaces',
+    forcePathStyle:driver==='spaces'||driver==='supabase',
     credentials: process.env.STORAGE_ACCESS_KEY && process.env.STORAGE_SECRET_KEY ? {
       accessKeyId:process.env.STORAGE_ACCESS_KEY,
       secretAccessKey:process.env.STORAGE_SECRET_KEY,
