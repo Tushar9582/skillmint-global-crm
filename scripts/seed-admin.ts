@@ -7,7 +7,7 @@ async function main() {
   const email=process.env.ADMIN_EMAIL?.trim().toLowerCase() || '';
   const password=process.env.ADMIN_PASSWORD||'';
   if(!email || password.length<12 || password==='replace-with-a-unique-long-password')
-    throw new Error('Set ADMIN_EMAIL and a unique ADMIN_PASSWORD (12+ characters) in .env first.');
+    throw new Error('Set ADMIN_EMAIL and a unique ADMIN_PASSWORD (12+ characters) in .env.local first.');
   await transaction(async client=>{
     let org=await one<{id:string}>('SELECT id FROM organizations WHERE name=$1 LIMIT 1',[name],client);
     if(!org) org=await one('INSERT INTO organizations(name) VALUES($1) RETURNING id',[name],client);

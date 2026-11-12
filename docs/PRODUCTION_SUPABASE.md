@@ -30,7 +30,7 @@ the pooler hostname and username differ from the direct URL.
 6. Configure a reachable `clamd` service and set `CLAMAV_HOST`/`CLAMAV_PORT`.
    Production uploads fail closed without it; never disable scanning to hide errors.
 7. **Seed a strong Admin password before turning on live traffic.** Local CLI
-   has `npm run db:seed`, reading a private local `.env`. Set
+   has `npm run db:seed`, reading a private local `.env.local`. Set
    `ADMIN_EMAIL`, `ADMIN_NAME`, `ADMIN_PASSWORD` (12+ chars),
    `ORG_NAME=SkillMint Global`. Never share the password in a chat or Git.
    The seed command is idempotent and does not overwrite existing users.
@@ -56,3 +56,15 @@ the pooler hostname and username differ from the direct URL.
   intentionally remain browser-local. Cloud drafts are private to their owner.
 - **Netlify credentials / deploy control are not available in this integration**.
   Code/schema changes cannot truthfully be called a verified live deployment.
+
+## Fix `node: .env: not found` on Windows
+
+The app's private **`.env.local`** file is used by Next.js, and `npm run db:check` and `npm run db:seed` now explicitly read that same file. You do not need to create or commit `.env`. Set the real Supabase pooler `DATABASE_URL`, `APP_ORIGIN=http://localhost:3000`, `DEV_DEMO_MODE=false`, `DEMO_MODE=false`, `ADMIN_EMAIL`, and a unique 12+ character `ADMIN_PASSWORD` in `.env.local`. Then run:
+
+```powershell
+ git pull origin main
+ npm run db:check
+ npm run db:seed
+```
+
+This project has already had its production schema applied in Supabase; **do not rerun `db:migrate` on the existing project**. `ADMIN_PASSWORD` is only needed to seed locally and is not needed on Netlify. Netlify requires its **own** private environment variables, and all demo flags must be `false` before production login will work.

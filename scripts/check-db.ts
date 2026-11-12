@@ -9,7 +9,7 @@ const requiredTables = [
 async function main(): Promise<void> {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error('DATABASE_URL is missing. Set it privately in your .env file.');
+    throw new Error('DATABASE_URL is missing. Set it privately in your .env.local file.');
   }
 
   const pool = new Pool({
