@@ -819,3 +819,101 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.nav-scroll::-webkit-scrollbar,
   #resume-print-area{position:absolute!important;top:0!important;left:0!important;width:186mm!important;max-width:186mm!important;min-height:0!important;aspect-ratio:auto!important;padding:0!important;box-shadow:none!important;border:0!important;margin:0!important;overflow:visible!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
   #resume-print-area .resume-paper-section,#resume-print-area .resume-paper-entry{break-inside:avoid}
 }
+
+
+/* Premium production login: navy + white, independent from legacy demo page styles. */
+.skillmint-auth{--auth-navy:#071c37;--auth-blue:#164f8d;--auth-line:#dce6f2;
+  display:grid;grid-template-columns:minmax(0,1.04fr) minmax(0,.96fr);
+  min-height:100vh;min-height:100dvh;background:#fff;color:#122e50}
+.skillmint-auth-story{position:relative;overflow:hidden;color:#fff;
+  background:radial-gradient(circle at 86% 32%,rgba(51,108,188,.45),transparent 36%),
+    radial-gradient(circle at 14% 94%,rgba(38,101,185,.25),transparent 43%),
+    linear-gradient(140deg,#07172d 0%,#0b2c55 62%,#123f73 100%)}
+.skillmint-auth-story:before{content:'';position:absolute;inset:auto -190px -350px auto;
+  height:720px;width:720px;border:1px solid rgba(208,228,255,.12);border-radius:50%;pointer-events:none}
+.skillmint-auth-story:after{content:'';position:absolute;inset:auto -110px -260px auto;
+  height:550px;width:550px;border:55px solid rgba(218,236,255,.055);border-radius:50%;pointer-events:none}
+.skillmint-auth-story-inner{position:relative;z-index:1;min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;max-width:860px;margin:0 auto;
+  padding:clamp(34px,4.3vw,72px) clamp(32px,5.8vw,100px) 38px}
+.skillmint-auth-brand{display:flex;align-items:center;gap:14px}
+.skillmint-auth-brand img{width:54px;height:54px;object-fit:contain;
+  filter:grayscale(1) brightness(0) invert(1)}
+.skillmint-auth-brand strong{font-size:24px;letter-spacing:-1px;line-height:1;display:block;color:#fff}
+.skillmint-auth-brand small{display:block;letter-spacing:4.3px;font-size:9px;font-weight:800;margin-top:9px;color:#e1ebfa}
+.skillmint-auth-hero{margin:auto 0;padding:68px 0 72px}
+.skillmint-auth-kicker{display:inline-flex;align-items:center;gap:10px;
+  color:#bcd9ff;font-size:12px;letter-spacing:1.5px;font-weight:800}
+.skillmint-auth-hero h1{color:#fff;font-size:clamp(38px,4vw,67px);line-height:1.13;
+  letter-spacing:-2.5px;margin-top:24px;font-weight:800}
+.skillmint-auth-hero h1 em{font-style:normal;color:#95c6ff}
+.skillmint-auth-hero p{color:#d3e2f3;font-size:16px;line-height:1.9;margin-top:25px;max-width:490px}
+.skillmint-auth-pills{display:flex;gap:11px;flex-wrap:wrap;margin-top:42px}
+.skillmint-auth-pills span{display:inline-flex;align-items:center;gap:9px;color:#e6f1ff;
+  padding:11px 13px;border-radius:11px;background:rgba(255,255,255,.09);
+  border:1px solid rgba(233,244,255,.15);font-size:12px;font-weight:700}
+.skillmint-auth-pills svg{color:#8ec8ff}
+.skillmint-auth-story-bottom{display:flex;align-items:center;gap:10px;
+  color:#a9c7e5;font-size:12px}
+.skillmint-auth-form-side{display:flex;justify-content:center;align-items:center;
+  padding:55px clamp(30px,5.2vw,88px);background:#fff}
+.skillmint-auth-form-shell{width:100%;max-width:480px}
+.skillmint-auth-welcome{display:inline-flex;align-items:center;gap:9px;
+  letter-spacing:1.45px;color:#245c9a;font-size:12px;font-weight:800}
+.skillmint-auth-welcome-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#3179c1}
+.skillmint-auth-form-shell h2{font-size:clamp(29px,2.4vw,39px);line-height:1.25;
+  letter-spacing:-1.3px;color:#0d2948;margin-top:18px}
+.skillmint-auth-subtitle{margin-top:12px;color:#72869e;font-size:15px;line-height:1.65;max-width:435px}
+.skillmint-auth-form{margin-top:40px;display:flex;flex-direction:column;gap:0}
+.skillmint-auth-form label{font-size:14px;color:#294969;font-weight:800;margin-bottom:10px}
+.skillmint-auth-input{display:flex;align-items:center;gap:13px;border:1px solid var(--auth-line);
+  padding:0 14px 0 17px;border-radius:13px;height:58px;min-width:0;
+  background:#fff;transition:border-color .17s,box-shadow .17s;margin-bottom:23px}
+.skillmint-auth-input:focus-within{border-color:#2463a7;box-shadow:0 0 0 4px rgba(41,115,193,.09)}
+.skillmint-auth-input>svg{color:#8da9c1;flex:0 0 auto}
+.skillmint-auth-input input{border:0;outline:0;min-width:0;flex:1;height:100%;background:transparent;
+  font-size:15px;color:#16395f}
+.skillmint-auth-input input::placeholder{color:#9aadc1}
+.skillmint-auth-toggle{border:0;background:none;display:grid;place-items:center;
+  padding:8px;border-radius:9px;color:#54789c;flex:0 0 auto}
+.skillmint-auth-toggle:hover{background:#edf4fd;color:#164d86}
+.skillmint-auth-submit{border:0;width:100%;display:flex;align-items:center;justify-content:center;
+  gap:11px;min-height:56px;background:linear-gradient(100deg,#1d5c9c,#0f3766);
+  color:#fff;border-radius:13px;font-weight:800;font-size:15px;margin-top:5px;
+  box-shadow:0 13px 23px rgba(12,53,96,.18);transition:transform .18s,box-shadow .18s}
+.skillmint-auth-submit:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(12,53,96,.24)}
+.skillmint-auth-submit:disabled{opacity:.7}
+.skillmint-auth-error{background:#fff2f2;color:#a12b37;border:1px solid #ffcccc;
+  border-radius:10px;padding:13px 15px;margin:-4px 0 19px;font-size:13px;line-height:1.5}
+.skillmint-auth-preview{margin-top:24px;color:#745315;background:#fff7e5;
+  border:1px solid #f3ddb2;padding:13px 15px;border-radius:10px;font-size:13px;line-height:1.55}
+.skillmint-auth-assurance{display:flex;align-items:center;justify-content:center;gap:9px;
+  color:#4d7297;font-size:12px;font-weight:700;margin-top:26px}
+.skillmint-auth-assurance svg{color:#357cb9}
+.skillmint-auth-help{text-align:center;margin-top:31px;font-size:12px;line-height:1.8;color:#7b91aa}
+.skillmint-auth-copyright{margin-top:46px;text-align:center;font-size:11px;color:#a5b3c3}
+.skillmint-auth-spin{animation:skillmint-auth-spin 1s linear infinite}
+@keyframes skillmint-auth-spin{to{transform:rotate(360deg)}}
+@media(max-width:1000px){
+  .skillmint-auth{grid-template-columns:minmax(0,.87fr) minmax(0,1.13fr)}
+  .skillmint-auth-story-inner{padding:36px}
+  .skillmint-auth-hero h1{font-size:clamp(35px,4.4vw,51px)}
+  .skillmint-auth-form-side{padding:40px 35px}
+}
+@media(max-width:750px){
+  .skillmint-auth{grid-template-columns:1fr}
+  .skillmint-auth-story-inner{min-height:0;padding:22px 25px 25px}
+  .skillmint-auth-brand img{width:43px;height:43px}
+  .skillmint-auth-brand strong{font-size:20px}
+  .skillmint-auth-hero{padding:29px 0 0}
+  .skillmint-auth-hero h1{font-size:clamp(30px,7vw,42px);letter-spacing:-1.3px;margin-top:13px}
+  .skillmint-auth-hero p,.skillmint-auth-pills,.skillmint-auth-story-bottom{display:none}
+  .skillmint-auth-form-side{padding:40px 25px 55px;align-items:flex-start}
+  .skillmint-auth-form{margin-top:28px}
+  .skillmint-auth-form-shell h2{font-size:30px}
+  .skillmint-auth-copyright{margin-top:35px}
+}
+@media(prefers-reduced-motion:reduce){
+  .skillmint-auth-submit,.skillmint-auth-input{transition:none}
+  .skillmint-auth-spin{animation:none}
+}

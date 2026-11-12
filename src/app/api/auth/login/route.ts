@@ -43,6 +43,7 @@ export async function POST(request:NextRequest) {
   try {
     assertSameOrigin(request);
     if (isDemoModeRequested()) return await stagingLogin(request);
+    if (!process.env.DATABASE_URL) return json({error:'Secure login is not configured yet. Contact your administrator.'},503);
     const input=await request.json();
     if(!input || typeof input!=='object' || Array.isArray(input)) return json({error:'Email and password required'},400);
     const {email,password}=input as {email?:unknown;password?:unknown};
