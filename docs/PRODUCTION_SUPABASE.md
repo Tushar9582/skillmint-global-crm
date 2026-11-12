@@ -105,3 +105,31 @@ If login still returns 500, check Netlify **Cloud compute → Functions → runt
 
 Do not copy the Windows certificate path into Netlify; use the Base64 value above.
 Do not use `NODE_TLS_REJECT_UNAUTHORIZED=0` or `rejectUnauthorized:false`.
+
+## Next.js build-time error when collecting /api/auth/login
+
+Netlify may fail to build with:
+`Failed to collect configuration for /api/auth/login` /
+`DATABASE_URL must be a valid PostgreSQL connection URI`.
+
+The database Pool is now created **lazily on the first database operation**.
+Importing a Next.js API route during `npm run build` no longer reads or validates
+the runtime database connection or CA bundle. It still fails closed during a
+real request if the URI is missing or invalid. This removes a build-time
+dependency on runtime database secrets; **it does not validate that production
+login works**.
+
+In Netlify → Site configuration → Environment variables, ensure
+`DATABASE_URL` is configured for **Functions** scope (and Build too if your
+deployment needs it) and the **Production** deploy context. Use the *entire*
+up-to-date **Supabase Transaction pooler** URI copied from the dashboard,
+including the real percent-encoded database password. Do NOT use an API URL
+starting with `https://`, the placeholder `[YOUR-PASSWORD]`, an old
+credential, an Admin login password, or a certificate Base64 value.
+
+The **`SUPABASE_CA_CERT_BASE64`** environment variable must contain the PEM
+certificate encoded as Base64. It is not a replacement for
+`DATABASE_URL`. With a CA configured, TLS validation remains enabled.
+
+Redeploy the latest GitHub commit, then check Netlify runtime Function logs
+for any `[login] failed` errors. A successful build alone is insufficient.

@@ -2,15 +2,39 @@ import { Pool, type PoolClient, type QueryResultRow } from 'pg';
 import { postgresConnectionOptions } from './db-config';
 
 const globalPool = globalThis as typeof globalThis & { skillmintPool?: Pool };
+let currentPool: Pool | undefined;
 
-export const pool = globalPool.skillmintPool ?? new Pool({
-  ...postgresConnectionOptions(),
-  max: Math.min(Math.max(Number(process.env.DB_POOL_MAX || 3),1),10),
-  allowExitOnIdle: true,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+/**
+ * Next.js imports API route modules during `next build` to collect route data.
+ * Do not read/validate DATABASE_URL or the Supabase CA when the module is imported:
+ * Netlify runtime secrets may not be available during the build.
+ * Fail closed when a real database operation is first attempted instead.
+ */
+export function getPool(): Pool {
+  if (!currentPool) {
+    currentPool = globalPool.skillmintPool ?? new Pool({
+      ...postgresConnectionOptions(),
+      max: Math.min(Math.max(Number(process.env.DB_POOL_MAX || 3), 1), 10),
+      allowExitOnIdle: true,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+    });
+    if (process.env.NODE_ENV !== 'production') globalPool.skillmintPool = currentPool;
+  }
+  return currentPool;
+}
+
+/** Backwards-compatible lazy Pool facade for existing imports and CLI scripts. */
+export const pool: Pool = new Proxy({} as Pool, {
+  get(_target, property) {
+    const actual = getPool();
+    const value: unknown = Reflect.get(actual, property, actual);
+    return typeof value === 'function' ? value.bind(actual) : value;
+  },
+  set(_target, property, value) {
+    return Reflect.set(getPool(), property, value);
+  },
 });
-if (process.env.NODE_ENV !== 'production') globalPool.skillmintPool = pool;
 
 export async function sql<T = QueryResultRow>(
   query: string,
