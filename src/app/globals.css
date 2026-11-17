@@ -796,6 +796,95 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.nav-scroll::-webkit-scrollbar,
 .resume-paper-minimal .resume-paper-contact{justify-content:center}
 .resume-paper-minimal .resume-paper-section h2{color:#1f2933;border-bottom-color:#b5bec6}
 .resume-paper-minimal .resume-paper-skills span{background:#f0f1f2;color:#354352}
+
+/* Eight selectable resume styles. Thumbnail appearance follows the printed document. */
+.resume-templates-panel{padding:20px 23px;display:flex;flex-direction:column;gap:17px}
+.resume-templates-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.resume-templates-heading .eyebrow{color:#2b639d;margin-bottom:6px}
+.resume-templates-heading h2{color:#173b60;font-size:19px;line-height:1.3}
+.resume-templates-heading p{font-size:12px;color:#768fa8;line-height:1.5;margin-top:5px}
+.resume-templates-count{background:#edf4fc;border:1px solid #d8e7f6;padding:8px 11px;border-radius:99px;color:#315f90;font-size:11px;font-weight:800;white-space:nowrap}
+.resume-template-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.resume-template-card{--thumb-accent:#235b98;position:relative;display:flex;align-items:center;gap:13px;text-align:left;min-width:0;padding:11px;background:#fff;border:1px solid #dce6f1;border-radius:12px;color:#163d64;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}
+.resume-template-card:hover{border-color:#8bb0d8;background:#f8fbff}
+.resume-template-card:focus-visible{outline:3px solid #85b7f0;outline-offset:2px}
+.resume-template-card.is-selected{border:2px solid #2367ae;background:#f4f9ff;padding:10px;box-shadow:0 0 0 2px rgba(35,103,174,.08)}
+.resume-template-thumbnail{--thumb-accent:#235b98;flex:0 0 66px;width:66px;height:91px;display:flex;flex-direction:column;gap:8px;padding:10px 8px;background:#fff;border:1px solid #dce3ec;box-shadow:0 2px 9px rgba(26,49,77,.08);overflow:hidden}
+.resume-template-thumb-head{display:flex;flex-direction:column;gap:3px;border-bottom:2px solid var(--thumb-accent);padding-bottom:7px;color:var(--thumb-accent)}
+.resume-template-thumb-head b{font-size:7px;line-height:1;white-space:nowrap;letter-spacing:-.25px}
+.resume-template-thumb-head small{font-size:4px;color:#667f96;white-space:nowrap}
+.resume-template-thumb-head i{height:2px;width:90%;background:#aebac8;margin-top:2px}
+.resume-template-thumb-content{display:flex;flex-direction:column;gap:4px}
+.resume-template-thumb-content b{display:block;width:48%;height:3px;background:var(--thumb-accent);margin-top:2px}
+.resume-template-thumb-content i{display:block;width:95%;height:2px;background:#cbd5e1}
+.resume-template-thumb-content i:nth-child(3),.resume-template-thumb-content i:nth-child(6){width:68%}
+.resume-template-card-text{display:flex;flex-direction:column;gap:5px;min-width:0}
+.resume-template-card-text strong{font-size:12px;font-weight:800;color:#1c446a;line-height:1.3}
+.resume-template-card-text small{font-size:10px;color:#8195aa;line-height:1.35}
+.resume-template-card-text em{font-style:normal;color:#356a9f;font-size:9px;font-weight:800}
+.resume-template-selected-mark{position:absolute;top:7px;right:7px;width:21px;height:21px;background:#256ba9;color:#fff;border-radius:50%;display:grid;place-items:center}
+.resume-template-thumbnail-minimal{--thumb-accent:#303943}
+.resume-template-thumbnail-minimal .resume-template-thumb-head{text-align:center;border-bottom-width:1px}
+.resume-template-thumbnail-minimal .resume-template-thumb-head i{margin:2px auto 0}
+.resume-template-thumbnail-modern{--thumb-accent:#0f827b;border-top:5px solid #0f827b}
+.resume-template-thumbnail-classic{--thumb-accent:#36322c;font-family:Georgia,'Times New Roman',serif}
+.resume-template-thumbnail-classic .resume-template-thumb-head{text-align:center;border-bottom:1px solid #a7a29a}
+.resume-template-thumbnail-corporate{--thumb-accent:#172d4b}
+.resume-template-thumbnail-corporate .resume-template-thumb-head{background:#172d4b;color:#fff;padding:4px 3px 6px;margin:-5px -3px 0;border:0}
+.resume-template-thumbnail-corporate .resume-template-thumb-head small{color:#d6e4f5}
+.resume-template-thumbnail-compact{--thumb-accent:#3d4a55;gap:4px;padding:7px}
+.resume-template-thumbnail-compact .resume-template-thumb-content{gap:2px}
+.resume-template-thumbnail-elegant{--thumb-accent:#79466b;font-family:Georgia,'Times New Roman',serif}
+.resume-template-thumbnail-elegant .resume-template-thumb-head{text-align:center;border-bottom:1px solid #79466b}
+.resume-template-thumbnail-creative{--thumb-accent:#aa6238;border-left:5px solid #aa6238}
+.resume-template-thumbnail-creative .resume-template-thumb-head{background:#fff5ed;margin:-3px -3px 0;padding:5px 3px}
+.resume-paper-modern{border-top:9px solid #0e827c}
+.resume-paper-modern .resume-paper-header{border:0;padding-bottom:13px}
+.resume-paper-modern .resume-paper-header h1{color:#0a6965;letter-spacing:-.9px;text-transform:none}
+.resume-paper-modern .resume-paper-header>p,.resume-paper-modern .resume-paper-contact a{color:#0e827c}
+.resume-paper-modern .resume-paper-section h2{color:#0c706b;border:0;border-left:4px solid #0e827c;padding:2px 0 2px 10px}
+.resume-paper-modern .resume-paper-skills span{color:#0b6964;background:#e7f6f3}
+.resume-paper-classic{font-family:Georgia,'Times New Roman',serif;line-height:1.55}
+.resume-paper-classic .resume-paper-header{text-align:center;border-bottom:1px solid #626262}
+.resume-paper-classic .resume-paper-header h1{font-family:Georgia,'Times New Roman',serif;color:#242424;text-transform:none;letter-spacing:0}
+.resume-paper-classic .resume-paper-header>p,.resume-paper-classic .resume-paper-contact a{color:#444}
+.resume-paper-classic .resume-paper-contact{justify-content:center}
+.resume-paper-classic .resume-paper-section h2{font-family:Georgia,'Times New Roman',serif;color:#242424;letter-spacing:.35px;border-bottom:1px solid #999}
+.resume-paper-classic .resume-paper-skills span{color:#333;background:none;border-radius:0;padding:0}
+.resume-paper-classic .resume-paper-skills span:not(:last-child):after{content:' · ';white-space:pre}
+.resume-paper-corporate .resume-paper-header{background:#142d4c;padding:20px 24px;margin:-12px -12px 24px;border:0}
+.resume-paper-corporate .resume-paper-header h1{color:#fff}
+.resume-paper-corporate .resume-paper-header>p{color:#c8def7}
+.resume-paper-corporate .resume-paper-contact,.resume-paper-corporate .resume-paper-contact a{color:#e0ebfa}
+.resume-paper-corporate .resume-paper-section h2{color:#132f52;border-bottom:2px solid #b7cada}
+.resume-paper-corporate .resume-paper-skills span{background:#e9f1f9;color:#173a61}
+.resume-paper-compact{line-height:1.32}
+.resume-paper-compact .resume-paper-header{border-bottom:1px solid #566675;padding-bottom:11px;margin-bottom:12px}
+.resume-paper-compact .resume-paper-header h1{font-size:25px;color:#263642}
+.resume-paper-compact .resume-paper-header>p{font-size:11px;color:#4a5c6b;margin-top:4px}
+.resume-paper-compact .resume-paper-contact{margin-top:9px}
+.resume-paper-compact .resume-paper-section{margin-top:10px}
+.resume-paper-compact .resume-paper-section h2{font-size:11px;color:#283846;padding-bottom:4px;margin-bottom:6px}
+.resume-paper-compact .resume-paper-copy,.resume-paper-compact .resume-paper-entry,.resume-paper-compact .resume-paper-section>p,.resume-paper-compact .resume-paper-section ul{font-size:10px;line-height:1.35}
+.resume-paper-compact .resume-paper-entry{margin:7px 0}
+.resume-paper-compact .resume-paper-skills span{padding:2px 5px;background:#edf0f2;color:#34414d}
+.resume-paper-elegant{font-family:Georgia,'Times New Roman',serif}
+.resume-paper-elegant .resume-paper-header{text-align:center;border:0;border-bottom:2px solid #79466b}
+.resume-paper-elegant .resume-paper-header h1{font-family:Georgia,'Times New Roman',serif;color:#6f3c60;text-transform:none;letter-spacing:.2px}
+.resume-paper-elegant .resume-paper-header>p,.resume-paper-elegant .resume-paper-contact a{color:#79466b}
+.resume-paper-elegant .resume-paper-contact{justify-content:center}
+.resume-paper-elegant .resume-paper-section h2{font-family:Georgia,'Times New Roman',serif;color:#79466b;letter-spacing:.3px;border-color:#e0cfdc;text-transform:none;font-size:14px}
+.resume-paper-elegant .resume-paper-skills span{color:#6f3c60;background:#f7edf4}
+.resume-paper-creative{border-left:10px solid #ad683e}
+.resume-paper-creative .resume-paper-header{background:#fff6ee;border:0;padding:17px 19px;margin:-12px -12px 25px}
+.resume-paper-creative .resume-paper-header h1{color:#a45b33;text-transform:none}
+.resume-paper-creative .resume-paper-header>p,.resume-paper-creative .resume-paper-contact a{color:#a96542}
+.resume-paper-creative .resume-paper-section h2{color:#95562e;border-bottom:2px solid #ead0b9}
+.resume-paper-creative .resume-paper-skills span{background:#fff0e1;color:#97572e}
+@media(max-width:1500px){.resume-template-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.resume-templates-panel{padding:16px}.resume-template-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.resume-template-card{gap:9px;padding:9px}.resume-template-card.is-selected{padding:8px}.resume-template-thumbnail{flex-basis:54px;width:54px;height:78px;padding:8px 6px}.resume-template-card-text small{display:none}.resume-template-card-text strong{font-size:11px}}
+@media(max-width:400px){.resume-template-grid{grid-template-columns:1fr}.resume-template-card-text small{display:block}}
+
 .resume-preview-footnote{color:#8297ac;font-size:11px;line-height:1.65;margin:14px 8px;text-align:center}
 .resume-ai-tools{gap:17px}
 .resume-ai-icon{width:48px;height:48px;display:grid;place-items:center;background:#e5effc;color:#225c99;border-radius:13px}

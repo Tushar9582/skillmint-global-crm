@@ -1,4 +1,16 @@
-export type ResumeTemplate='executive'|'minimal';
+/** Built-in, print-ready themes. The selected ID is stored with each cloud draft. */
+export const RESUME_TEMPLATES = [
+  {id:'executive',name:'Executive Blue',description:'Confident navy styling',category:'Professional'},
+  {id:'minimal',name:'Minimal White',description:'Clean monochrome layout',category:'ATS-focused'},
+  {id:'modern',name:'Modern Teal',description:'Fresh, contemporary accents',category:'Modern'},
+  {id:'classic',name:'Classic Serif',description:'Traditional formal typography',category:'ATS-focused'},
+  {id:'corporate',name:'Corporate Navy',description:'Structured business profile',category:'Professional'},
+  {id:'compact',name:'Compact Graphite',description:'More information per page',category:'ATS-focused'},
+  {id:'elegant',name:'Elegant Plum',description:'Refined editorial appearance',category:'Modern'},
+  {id:'creative',name:'Creative Amber',description:'Warm and distinctive profile',category:'Modern'},
+] as const;
+
+export type ResumeTemplate = (typeof RESUME_TEMPLATES)[number]['id'];
 
 export type ResumeExperience={
   id:string;role:string;company:string;period:string;details:string;
@@ -74,5 +86,5 @@ export function isResumeDraft(value:unknown):value is ResumeDraft {
     &&Array.isArray(row.experience)&&row.experience.every(value=>item(value,['id','role','company','period','details']))
     &&Array.isArray(row.education)&&row.education.every(value=>item(value,['id','degree','institution','year']))
     &&Array.isArray(row.projects)&&row.projects.every(value=>item(value,['id','name','details']))
-    &&['executive','minimal'].includes(String(row.template));
+    &&RESUME_TEMPLATES.some(template=>template.id===row.template);
 }

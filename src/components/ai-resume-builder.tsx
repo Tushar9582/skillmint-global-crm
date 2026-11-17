@@ -7,7 +7,7 @@ import { ArrowLeft, Check, ChevronDown, Download, FilePlus2, FileText, Loader2, 
 import { requestJson } from '@/lib/client-api';
 import { isDemoClient } from '@/lib/demo-client';
 import { candidateResumeFields, createResumeDraft, isResumeDraft, resumeLines, resumeSkills,
-  safeResumeUrl, starterResumeSummary, type ResumeDraft, type ResumeEducation, type ResumeExperience, type ResumeProject } from '@/lib/resume-builder';
+  safeResumeUrl, starterResumeSummary, RESUME_TEMPLATES, type ResumeDraft, type ResumeEducation, type ResumeExperience, type ResumeProject } from '@/lib/resume-builder';
 import { useCurrentUser } from './workspace-shell';
 
 type EditorTab='personal'|'experience'|'education'|'ai';
@@ -217,6 +217,26 @@ export function AiResumeBuilderPage() {
       <div className="resume-builder-toolbar-actions"><button className="btn ghost" onClick={newDraft} type="button"><FilePlus2 size={16}/> New Resume</button><button className="btn ghost resume-delete-draft" onClick={deleteDraft} type="button" aria-label="Delete current resume draft"><Trash2 size={16}/></button></div>
       <label className="resume-candidate-import"><span>Import from Lead Bank</span><div className="resume-candidate-import-controls"><select className="form-input" aria-label="Choose candidate to import" value={candidateToImport} onChange={event=>setCandidateToImport(event.target.value)}><option value="">Select candidate (optional)</option>{candidates.map(item=><option key={String(item.id)} value={String(item.id)}>{String(item.full_name||'Candidate')}{item.email?` · ${item.email}`:''}</option>)}</select><button className="btn soft" type="button" disabled={!candidateToImport} onClick={importCandidate}><UserRoundSearch size={16}/> Import</button></div></label>
     </div>
+    <section className="resume-templates-panel panel" aria-labelledby="resume-template-heading">
+      <div className="resume-templates-heading">
+        <div><span className="eyebrow">PROFESSIONAL DESIGN LIBRARY</span><h2 id="resume-template-heading">Choose your resume template</h2>
+          <p>Select any design to update the live preview instantly. Your resume content stays the same.</p></div>
+        <span className="resume-templates-count">{RESUME_TEMPLATES.length} ready-to-use templates</span>
+      </div>
+      <div className="resume-template-grid" role="group" aria-label="Available resume templates">
+        {RESUME_TEMPLATES.map(item=><button key={item.id} type="button"
+          className={`resume-template-card ${draft.template===item.id?'is-selected':''}`}
+          aria-label={`Select ${item.name} resume template`} aria-pressed={draft.template===item.id}
+          onClick={()=>change('template',item.id)}>
+          <span className={`resume-template-thumbnail resume-template-thumbnail-${item.id}`} aria-hidden="true">
+            <span className="resume-template-thumb-head"><b>YOUR NAME</b><small>Professional Title</small><i/></span>
+            <span className="resume-template-thumb-content"><b/><i/><i/><b/><i/><i/><b/><i/></span>
+          </span>
+          <span className="resume-template-card-text"><strong>{item.name}</strong><small>{item.description}</small><em>{item.category}</em></span>
+          {draft.template===item.id&&<span className="resume-template-selected-mark" aria-hidden="true"><Check size={13}/></span>}
+        </button>)}
+      </div>
+    </section>
     {notice&&<div className="alert resume-builder-notice" role="status">{notice}</div>}
     <div className="resume-builder-layout">
       <section className="resume-editor panel" aria-label="Resume details editor">
@@ -263,7 +283,7 @@ export function AiResumeBuilderPage() {
         </div>
         <div className="resume-editor-bottom"><button className="btn ghost" type="button" disabled={tab==='personal'} onClick={()=>setTab(tabs[Math.max(0,tabs.findIndex(item=>item.id===tab)-1)].id)}>Previous</button><button className="btn primary" type="button" onClick={()=>{const index=tabs.findIndex(item=>item.id===tab);if(index<tabs.length-1)setTab(tabs[index+1].id);else saveNow();}}>{tab==='ai'?'Save Resume Draft':'Continue'} {tab==='ai'?<Save size={16}/>:<ChevronDown className="resume-next-icon" size={16}/>}</button></div>
       </section>
-      <div className="resume-preview-column"><div className="resume-preview-heading"><div><span className="eyebrow">LIVE A4 PREVIEW</span><h2>Resume Preview</h2><p>Ready for printing or saving as PDF.</p></div><label><span>Template</span><select className="form-input" aria-label="Resume template" value={draft.template} onChange={event=>change('template',event.target.value as ResumeDraft['template'])}><option value="executive">Executive Blue</option><option value="minimal">Minimal White</option></select></label></div><ResumePreview draft={draft}/><p className="resume-preview-footnote">Use <b>Print / Save PDF</b>, then choose <b>Save as PDF</b> in your browser. Always review candidate information before sharing.</p></div>
+      <div className="resume-preview-column"><div className="resume-preview-heading"><div><span className="eyebrow">LIVE A4 PREVIEW</span><h2>Resume Preview</h2><p>Ready for printing or saving as PDF.</p></div><label><span>Template</span><select className="form-input" aria-label="Resume template" value={draft.template} onChange={event=>change('template',event.target.value as ResumeDraft['template'])}>{RESUME_TEMPLATES.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div><ResumePreview draft={draft}/><p className="resume-preview-footnote">Use <b>Print / Save PDF</b>, then choose <b>Save as PDF</b> in your browser. Always review candidate information before sharing.</p></div>
     </div>
   </div>;
 }

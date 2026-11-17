@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { candidateResumeFields, createResumeDraft, isResumeDraft, resumeLines,
+import { RESUME_TEMPLATES, candidateResumeFields, createResumeDraft, isResumeDraft, resumeLines,
   resumeSkills, safeResumeUrl, starterResumeSummary } from '../src/lib/resume-builder';
 
 test('new resume drafts are editable, separate, and start without fabricated candidate facts',()=>{
@@ -49,4 +49,15 @@ test('malformed saved drafts are rejected before rendering',()=>{
   assert.equal(isResumeDraft({...draft,experience:[{id:'bad',role:'Broken'}]}),false);
   assert.equal(isResumeDraft({...draft,template:'untrusted'}),false);
   assert.equal(isResumeDraft(null),false);
+});
+
+test('all resume template designs are accepted for saved cloud drafts',()=>{
+  const draft=createResumeDraft();
+  const ids=RESUME_TEMPLATES.map(template=>template.id);
+  assert.equal(ids.length,8);
+  assert.equal(new Set(ids).size,ids.length);
+  for(const template of RESUME_TEMPLATES) {
+    assert.equal(isResumeDraft({...draft,template:template.id}),true,template.name);
+  }
+  assert.equal(isResumeDraft({...draft,template:'unknown'}),false);
 });
