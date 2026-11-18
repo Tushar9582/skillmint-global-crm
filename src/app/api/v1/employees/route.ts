@@ -7,9 +7,9 @@ export const GET=api(async(_request,actor)=>{
   ensureAdmin(actor);
   const data=await sql(
     `SELECT u.id,u.full_name,u.email,u.role,u.team,u.active,u.created_at,
-      (SELECT count(*)::integer FROM company_leads l WHERE l.owner_id=u.id) AS company_leads,
-      (SELECT count(*)::integer FROM candidates c WHERE c.owner_id=u.id) AS candidates,
-      (SELECT count(*)::integer FROM followups f WHERE f.owner_id=u.id AND f.status='pending') AS pending_followups
+      (SELECT count(*)::integer FROM company_leads l WHERE l.owner_id=u.id AND l.organization_id=u.organization_id) AS company_leads,
+      (SELECT count(*)::integer FROM candidates c WHERE c.owner_id=u.id AND c.organization_id=u.organization_id) AS candidates,
+      (SELECT count(*)::integer FROM followups f WHERE f.owner_id=u.id AND f.organization_id=u.organization_id AND f.status='pending') AS pending_followups
      FROM users u WHERE u.organization_id=$1 ORDER BY u.created_at DESC`,[actor.organization_id]);
   return json({data});
 });

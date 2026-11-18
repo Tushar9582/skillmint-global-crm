@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { saasIsolationEnabled, withTenantScope } from './tenant-context';
+import { assertWorkspaceAccess } from './saas';
 import { getActor, HttpError, assertSameOrigin, isDemoModeRequested, isStagingDemoMode, type Actor } from './auth';
 
 export type Handler = (request: NextRequest, actor: Actor) => Promise<Response>;
@@ -20,6 +22,12 @@ export function api(handler: Handler): (request: NextRequest) => Promise<Respons
       if(!actor) throw new HttpError(401,'Please sign in');
       if(actor.must_change_password && request.nextUrl.pathname!=='/api/auth/me')
         throw new HttpError(403,'Change your temporary password in My Profile before continuing');
+      if(saasIsolationEnabled()&&!isDemoModeRequested()){
+        return await withTenantScope({organizationId:actor.organization_id,userId:actor.id},async()=>{
+          if(request.nextUrl.pathname!=='/api/auth/me') await assertWorkspaceAccess(actor.organization_id);
+          return handler(request,actor);
+        });
+      }
       return await handler(request,actor);
     } catch(error) {
       if(error instanceof HttpError) return json({error:error.message},error.status);
