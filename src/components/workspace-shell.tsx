@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Role } from '@/lib/hr/core';
 import { Bell, BriefcaseBusiness, CalendarDays, Clock3, LayoutDashboard, LogOut, Menu,
-  Search, ShieldCheck, Sparkles, Users, UserRoundCog, Workflow, X, type LucideIcon } from 'lucide-react';
+  Search, ShieldCheck, Sparkles, Users, UserRoundCog, Workflow, X, Settings, type LucideIcon } from 'lucide-react';
 import { DEMO_PEOPLE, getDemoRole, setDemoRole } from '@/lib/hr/demo-hr';
 import '@/lib/hr/demo-all';
 import { ROLE_LABELS, ROLES } from '@/lib/hr/core';
@@ -26,13 +26,14 @@ const navItems:NavItem[]=[
   {href:'/followups',label:'Follow-up Center',icon:Clock3},
   {href:'/employees',label:'Employee Management',icon:UserRoundCog,adminOnly:true},
   {href:'/duplicate-reviews',label:'Duplicate Resume Review',icon:ShieldCheck,adminOnly:true},
+  {href:'/company-settings',label:'Company Settings',icon:Settings,adminOnly:true},
 ];
 const pageTitles:Record<string,string>={
   '/dashboard':'Lead Dashboard','/notifications':'Notifications','/profile':'My Profile',
   '/clients':'Client Setup','/jobs':'Job Requirement Setup',
 };
 
-export function WorkspaceShell({user:serverUser,children}:{user:CurrentUser;children:ReactNode}) {
+export function WorkspaceShell({user:serverUser,branding,children}:{user:CurrentUser;branding?:{name:string;logoUrl:string|null};children:ReactNode}) {
   const pathname=usePathname();
   const router=useRouter();
   const [open,setOpen]=useState(false);
@@ -46,7 +47,7 @@ export function WorkspaceShell({user:serverUser,children}:{user:CurrentUser;chil
   if(demo&&!demoRole)return null;
   const person=demo&&demoRole?DEMO_PEOPLE[demoRole]:null;
   const user:CurrentUser=person?{id:person.id,full_name:person.full_name,email:person.email,role:person.role,must_change_password:false}:serverUser;
-  const nav=navItems.filter(item=>!item.adminOnly||user.role==='admin');
+  const nav=navItems.filter(item=>(!item.adminOnly||user.role==='admin')&&(!(demo||stagingDemo)||item.href!=='/company-settings'));
   function submitSearch(event:FormEvent) {event.preventDefault();if(search.trim())router.push(`/candidates?q=${encodeURIComponent(search.trim())}`);}
   async function logout() {if(demo){window.location.href='/login';return;}setLoggingOut(true);await fetch('/api/auth/logout',{method:'POST'});window.location.href='/login';}
   const page=navItems.find(item=>item.href===pathname)?.label||pageTitles[pathname]||'Workspace';
@@ -54,7 +55,7 @@ export function WorkspaceShell({user:serverUser,children}:{user:CurrentUser;chil
     <div className="app-frame">
       {open&&<button className="mobile-backdrop" onClick={()=>setOpen(false)} aria-label="Close navigation"/>}
       <aside className={`sidebar ${open?'sidebar-open':''}`}>
-        <div className="sidebar-brand brand white"><img className="brand-mark brand-logo" src="/brand/hrdiary-mark.svg" alt="HrDiary logo"/><span><strong>HrDiary</strong><small>RECRUITMENT CRM</small></span><button className="sidebar-close" onClick={()=>setOpen(false)} aria-label="Close"><X size={20}/></button></div>
+        <div className="sidebar-brand brand white"><img key={branding?.logoUrl||"default"} className="brand-mark brand-logo hd-tenant-logo" src={branding?.logoUrl||"/brand/hrdiary-mark.svg"} alt="Company logo" onError={e=>{if(!e.currentTarget.src.endsWith("/brand/hrdiary-mark.svg"))e.currentTarget.src="/brand/hrdiary-mark.svg";}}/><span className="hd-tenant-name"><strong title={branding?.name||"HrDiary"}>{branding?.name||"HrDiary"}</strong><small>{branding?"POWERED BY HRDIARY":"RECRUITMENT CRM"}</small></span><button className="sidebar-close" onClick={()=>setOpen(false)} aria-label="Close"><X size={20}/></button></div>
         <Link href="/dashboard" onClick={()=>setOpen(false)} className="workspace-switch"><LayoutDashboard size={18}/><span>Lead Dashboard</span><span className="workspace-switch-arrow">↗</span></Link>
         <div className="sidebar-workspace-label">Lead Management<small>Recruitment & client pipeline</small></div>
         <nav className="nav-scroll" aria-label="CRM navigation">
