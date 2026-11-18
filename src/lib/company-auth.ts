@@ -4,6 +4,7 @@ import {hashPassword,HttpError,isDevDemoMode,isDemoModeRequested,normalizeEmail}
 export const AUTH_BASE='https://nozhoxwloatjibejxker.supabase.co/auth/v1';
 const key=process.env.SUPABASE_PUBLISHABLE_KEY||'sb_publishable_KlIlXvtZTT1Ci5Ssh3K-xA_p-VWAtEE';
 export const signupEnabled=()=>process.env.HRDIARY_SELF_SIGNUP_ENABLED==='true'&&process.env.HRDIARY_TENANT_RLS==='true'&&!isDemoModeRequested()&&!isDevDemoMode();
+export const registrationIntakeEnabled=()=>process.env.HRDIARY_REGISTRATION_CLOSED!=='true'&&!isDemoModeRequested()&&!isDevDemoMode();
 export type Identity={id:string;email?:string;email_confirmed_at?:string;user_metadata?:Record<string,unknown>};
 export type CompanyLogin={id:string;full_name:string;email:string;role:'admin';active:boolean;must_change_password:boolean};
 export async function authPost(path:string,data:Record<string,unknown>){
@@ -38,7 +39,8 @@ export async function companyAccount(identity:Identity,fields?:{name:string;comp
   const user=await one<CompanyLogin>("INSERT INTO users(organization_id,full_name,email,password_hash,role,active,must_change_password) VALUES($1,$2,$3,$4,'admin',true,false) RETURNING id,full_name,email,role,active,must_change_password",[org.id,fields.name,email,passwordHash],client);
   if(!user)throw Error('Admin creation failed');
   await sql('INSERT INTO hrdiary_admin_identities(auth_user_id,user_id) VALUES($1,$2)',[identity.id,user.id],client);
-  await sql("UPDATE hrdiary_signup_requests SET status='approved',organization_id=$1,reviewed_at=now() WHERE lower(email)=$2 AND status='pending'",[org.id,email],client);
+  const pending=await one("UPDATE hrdiary_signup_requests SET status='approved',organization_id=$1,reviewed_at=now() WHERE lower(email)=$2 AND status='pending' RETURNING id",[org.id,email],client);
+  if(!pending)await sql("INSERT INTO hrdiary_signup_requests(full_name,company_name,email,status,organization_id,reviewed_at) VALUES($1,$2,$3,'approved',$4,now())",[fields.name,fields.company,email,org.id],client);
   await sql(`INSERT INTO audit_events(organization_id,actor_id,action,entity_type,entity_id,details) VALUES($1,$2,'company_registration','organizations',$1,'{}'::jsonb)`,[org.id,user.id],client);
   return user;
  });

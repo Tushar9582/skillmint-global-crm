@@ -2,10 +2,10 @@ import {NextRequest} from 'next/server';
 import {assertSameOrigin,HttpError,normalizeEmail} from '@/lib/auth';
 import {body,json} from '@/lib/http';
 import {one,sql,transaction} from '@/lib/db';
-import {authPost,companyFields,signupEnabled} from '@/lib/company-auth';
+import {authPost,companyFields,registrationIntakeEnabled} from '@/lib/company-auth';
 export async function POST(request:NextRequest){
  try{
-  if(!signupEnabled())return json({error:'Company signup is not enabled yet. Contact HrDiary support.'},503);
+  if(!registrationIntakeEnabled())return json({error:'Company signup is not enabled yet. Contact HrDiary support.'},503);
   assertSameOrigin(request);
   const d=await body(request);
   const fields=companyFields(d.fullName,d.companyName);

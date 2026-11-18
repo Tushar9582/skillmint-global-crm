@@ -1,0 +1,8 @@
+'use client';
+import {useState,type FormEvent} from 'react';
+import Link from 'next/link';
+export function GoogleCompanyForm({email}:{email:string}){
+ const [name,setName]=useState(''),[company,setCompany]=useState(''),[message,setMessage]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ async function submit(e:FormEvent){e.preventDefault();setBusy(true);setError('');try{const r=await fetch('/api/auth/google/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fullName:name,companyName:company})});const d=await r.json();if(!r.ok)throw Error(d.error);setMessage(d.message);}catch(e){setError(e instanceof Error?e.message:'Registration failed');}finally{setBusy(false);}}
+ return <main className="hd-google-setup"><section className="hd-setup-card"><img src="/brand/hrdiary-mark.svg" alt="HrDiary" width={48} height={48}/><h1>Set up your company</h1><p className="skillmint-auth-subtitle">Google account: {email}</p>{message?<><p role="status">{message}</p><Link className="skillmint-auth-submit" href="/login">Go to sign in</Link></>:<form className="skillmint-auth-form" onSubmit={submit}><label>Full name</label><div className="skillmint-auth-input"><input value={name} onChange={e=>setName(e.target.value)} required maxLength={150}/></div><label>Company name</label><div className="skillmint-auth-input"><input value={company} onChange={e=>setCompany(e.target.value)} required maxLength={150}/></div>{error&&<p role="alert" className="skillmint-auth-error">{error}</p>}<button className="skillmint-auth-submit" disabled={busy}>{busy?'Saving…':'Create workspace'}</button></form>}</section></main>
+}

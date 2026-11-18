@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
+import {GoogleAuthButton} from '@/components/google-auth-button';
 import { ArrowRight, BriefcaseBusiness, CheckCircle2, Eye, EyeOff, FileText,
   LoaderCircle, LockKeyhole, Mail, ShieldCheck, Sparkles, UsersRound } from 'lucide-react';
 
@@ -18,6 +19,7 @@ export function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(()=>{const code=new URLSearchParams(window.location.search).get('google');if(code)setError(code==='existing'?'Use your existing company credentials. Google linking is not available for existing employees or legacy users.':code==='activation'?'Workspace activation is pending security configuration.':code==='closed'?'Registration is closed.':'Google sign-in could not complete. Check provider configuration or try again.');},[]);
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
@@ -119,6 +121,7 @@ export function LoginForm() {
           </button>
         </form>
 
+        <GoogleAuthButton/>
         <div style={{marginTop:16,textAlign:'center'}}><a href="/platform-login" style={{fontWeight:800,color:'#215b98'}}>Super Admin sign in</a></div>
         <div className="skillmint-auth-assurance">
           <CheckCircle2 size={18}/>
