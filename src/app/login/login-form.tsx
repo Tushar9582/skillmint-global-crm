@@ -122,18 +122,7 @@ export function LoginForm() {
         </form>
 
         <GoogleAuthButton/>
-        <div style={{marginTop:16,textAlign:'center'}}><a href="/platform-login" style={{fontWeight:800,color:'#215b98'}}>Super Admin sign in</a></div>
-        <div className="skillmint-auth-assurance">
-          <CheckCircle2 size={18}/>
-          <span>Protected account access · Admin and Employee roles</span>
-        </div>
-        <p className="skillmint-auth-help">Need an account or password reset?<br />
-          Contact your company administrator for access.</p>
-        <div style={{marginTop:20,textAlign:'center',padding:16,border:'1px solid #dce6f2',borderRadius:12,background:'#f5f9ff'}}>
-          <strong style={{color:'#143b65',fontSize:14}}>New company workspace</strong>
-          <p style={{fontSize:12,color:'#526d89',margin:'7px 0 12px'}}>Create your own recruitment workspace and manage your team.</p>
-          <a href="/register" style={{color:'#1c5794',fontWeight:800,fontSize:14,textDecoration:'underline'}}>Create Admin Account →</a>
-        </div>
+        <p className="skillmint-auth-help" style={{marginTop:22}}>New to HrDiary? <a href="/register" style={{fontWeight:750,color:'#215b98'}}>Sign up</a></p>
         <div className="skillmint-auth-copyright">© 2026 HrDiary. All rights reserved.</div>
       </div>
     </section>

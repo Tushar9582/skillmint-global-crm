@@ -46,11 +46,12 @@ export async function companyAccount(identity:Identity,fields?:{name:string;comp
  });
 }
 export async function verifiedPasswordLogin(email:string,password:string){
- if(!signupEnabled())return null;
  const auth=await authPost('/token?grant_type=password',{email,password});
  if(!auth.ok)return null;
  const identity=await verifiedIdentity(auth.result.access_token);if(!identity)return null;
+ if(!signupEnabled())throw new HttpError(403,'Your account is verified, but your company workspace is awaiting activation. Contact HrDiary support.');
  const meta=identity.user_metadata||{};
  const fields=typeof meta.hrdiary_company==='string'&&typeof meta.hrdiary_name==='string'?companyFields(meta.hrdiary_name,meta.hrdiary_company):undefined;
- return companyAccount(identity,fields);
+ const pending=await one<{full_name:string;company_name:string}>("SELECT full_name,company_name FROM hrdiary_signup_requests WHERE lower(email)=lower($1) AND status='pending' ORDER BY created_at DESC LIMIT 1",[identity.email]);
+ return companyAccount(identity,pending?companyFields(pending.full_name,pending.company_name):fields);
 }
