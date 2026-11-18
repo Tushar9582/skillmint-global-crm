@@ -3,7 +3,7 @@ import {one,sql,transaction} from './db';
 import {hashPassword,HttpError,isDevDemoMode,isDemoModeRequested,normalizeEmail} from './auth';
 export const AUTH_BASE='https://nozhoxwloatjibejxker.supabase.co/auth/v1';
 const key=process.env.SUPABASE_PUBLISHABLE_KEY||'sb_publishable_KlIlXvtZTT1Ci5Ssh3K-xA_p-VWAtEE';
-export const signupEnabled=()=>process.env.HRDIARY_SELF_SIGNUP_ENABLED==='true'&&process.env.HRDIARY_TENANT_RLS==='true'&&!isDemoModeRequested()&&!isDevDemoMode();
+export const signupEnabled=()=>process.env.HRDIARY_SELF_SIGNUP_ENABLED!=='false'&&process.env.HRDIARY_REGISTRATION_CLOSED!=='true'&&!isDemoModeRequested()&&!isDevDemoMode();
 export const registrationIntakeEnabled=()=>process.env.HRDIARY_REGISTRATION_CLOSED!=='true'&&!isDemoModeRequested()&&!isDevDemoMode();
 export type Identity={id:string;email?:string;email_confirmed_at?:string;user_metadata?:Record<string,unknown>};
 export type CompanyLogin={id:string;full_name:string;email:string;role:'admin';active:boolean;must_change_password:boolean};
@@ -23,16 +23,23 @@ export function companyFields(name:unknown,company:unknown){
  return {name:n,company:c};
 }
 export async function companyAccount(identity:Identity,fields?:{name:string;company:string}):Promise<CompanyLogin>{
- if(!signupEnabled())throw new HttpError(503,'Company registration is not enabled.');
  const email=normalizeEmail(identity.email);if(!email||!identity.email_confirmed_at)throw new HttpError(403,'Verify your email first.');
  if(await one('SELECT auth_user_id FROM hrdiary_auth_platform_owner WHERE auth_user_id=$1',[identity.id]))throw new HttpError(403,'Use Super Admin sign in.');
  return transaction(async client=>{
   await client.query('SELECT pg_advisory_xact_lock(183716928,hashtext($1))',[email]);
   const existing=await one<CompanyLogin>(`SELECT u.id,u.full_name,u.email,u.role,u.active,u.must_change_password FROM hrdiary_admin_identities i JOIN users u ON u.id=i.user_id WHERE i.auth_user_id=$1 AND u.role='admin'`,[identity.id],client);
   if(existing){if(!existing.active)throw new HttpError(403,'Account disabled');return existing;}
+  if(!signupEnabled())throw new HttpError(503,'New workspace registration is temporarily closed.');
   // Never attach a verified email to a pre-existing CRM account without a separate linking ceremony.
   if(await one('SELECT id FROM users WHERE lower(email)=$1',[email],client))throw new HttpError(409,'Use your existing CRM credentials. Contact support to link Google.');
   if(!fields)throw new HttpError(403,'Create your company workspace first.');
+  // Check that the actual production connection can switch to the RLS role before provisioning.
+  // No privileged fallback on failure. Test the same SQL helper used by the CRM.
+  await client.query('SET LOCAL ROLE skillmint_tenant_runtime');
+  await client.query("SELECT set_config('hrdiary.organization_id',$1,true)",['00000000-0000-4000-8000-000000000000']);
+  const ok=await one<{ok:boolean}>("SELECT current_user='skillmint_tenant_runtime' AND NOT EXISTS(SELECT 1 FROM organizations) AND NOT EXISTS(SELECT 1 FROM company_leads) AS ok",[],client);
+  if(!ok?.ok)throw new HttpError(503,'Workspace security is unavailable.');
+  await client.query('RESET ROLE');
   const org=await one<{id:string}>('INSERT INTO organizations(name) VALUES($1) RETURNING id',[fields.company],client);
   if(!org)throw Error('Organization creation failed');
   const passwordHash=await hashPassword(randomBytes(32).toString('hex'));
@@ -55,7 +62,6 @@ export async function verifiedPasswordLogin(email:string,password:string){
   return null;
  }
  const identity=await verifiedIdentity(auth.result.access_token);if(!identity)return null;
- if(!signupEnabled())throw new HttpError(403,'Your account is verified, but your company workspace is awaiting activation. Contact HrDiary support.');
  const meta=identity.user_metadata||{};
  const fields=typeof meta.hrdiary_company==='string'&&typeof meta.hrdiary_name==='string'?companyFields(meta.hrdiary_name,meta.hrdiary_company):undefined;
  const pending=await one<{full_name:string;company_name:string}>("SELECT full_name,company_name FROM hrdiary_signup_requests WHERE lower(email)=lower($1) AND status='pending' ORDER BY created_at DESC LIMIT 1",[identity.email]);

@@ -21,7 +21,8 @@ export function api(handler: Handler): (request: NextRequest) => Promise<Respons
       if(!actor) throw new HttpError(401,'Please sign in');
       if(actor.must_change_password && request.nextUrl.pathname!=='/api/auth/me')
         throw new HttpError(403,'Change your temporary password in My Profile before continuing');
-      if(process.env.HRDIARY_TENANT_RLS==='true'&&!isDemoModeRequested())return await withTenantScope(actor.organization_id,()=>handler(request,actor));
+      // All real CRM requests use the restricted database role, even without a Netlify flag.
+      if(!isDemoModeRequested())return await withTenantScope(actor.organization_id,()=>handler(request,actor));
       return await handler(request,actor);
     } catch(error) {
       if(error instanceof HttpError) return json({error:error.message},error.status);

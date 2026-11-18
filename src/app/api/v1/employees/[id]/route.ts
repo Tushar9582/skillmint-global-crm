@@ -20,10 +20,10 @@ export const PATCH=api(async(request,actor)=>{
   }
   if(!updates.length) throw new HttpError(400,'No employee changes provided');
   const employee=await transaction(async client=>{
-    const existing=await one('SELECT id FROM users WHERE id=$1 AND organization_id=$2',[id,actor.organization_id],client);
+    const existing=await one("SELECT id FROM users WHERE id=$1 AND organization_id=$2 AND role='employee'",[id,actor.organization_id],client);
     if(!existing) throw new HttpError(404,'Employee not found');
     const result=await one(
-      `UPDATE users SET ${updates.join(',')},updated_at=now() WHERE id=$${args.length+1} AND organization_id=$${args.length+2}
+      `UPDATE users SET ${updates.join(',')},updated_at=now() WHERE id=$${args.length+1} AND organization_id=${args.length+2} AND role='employee'
        RETURNING id,full_name,email,team,active`,[...args,id,actor.organization_id],client);
     if(data.temporary_password) await sql('DELETE FROM sessions WHERE user_id=$1',[id],client);
     await audit(actor,'employee_update','users',id,{fields:Object.keys(data)},client);
