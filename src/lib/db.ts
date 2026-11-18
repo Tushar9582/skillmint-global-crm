@@ -1,5 +1,6 @@
 import { Pool, type PoolClient, type QueryResultRow } from 'pg';
 import { postgresConnectionOptions } from './db-config';
+import {tenantScope} from './tenant-scope';
 
 const globalPool = globalThis as typeof globalThis & { skillmintPool?: Pool };
 let currentPool: Pool | undefined;
@@ -41,6 +42,7 @@ export async function sql<T = QueryResultRow>(
   params: unknown[] = [],
   client: Pool | PoolClient = pool,
 ): Promise<T[]> {
+  if(tenantScope()&&(client===pool||client===currentPool))return transaction(async scoped=>(await scoped.query<QueryResultRow>(query,params)).rows as T[]);
   const result = await client.query<QueryResultRow>(query, params);
   return result.rows as T[];
 }
@@ -57,6 +59,11 @@ export async function transaction<T>(callback: (client: PoolClient) => Promise<T
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const scope=tenantScope();
+    if(scope){
+      await client.query('SET LOCAL ROLE skillmint_tenant_runtime');
+      await client.query("SELECT set_config('hrdiary.organization_id',$1,true)",[scope.organizationId]);
+    }
     const result = await callback(client);
     await client.query('COMMIT');
     return result;

@@ -17,6 +17,7 @@ export async function GET(request:NextRequest){
   }
   const companies=await sql(`SELECT o.id,o.name,o.created_at,'legacy' AS status,'legacy' AS effective_status,NULL AS trial_ends_at,NULL AS paid_until,(SELECT count(*)::int FROM users u WHERE u.organization_id=o.id AND u.active) users,(SELECT count(*)::int FROM company_leads l WHERE l.organization_id=o.id) leads,(SELECT count(*)::int FROM candidates c WHERE c.organization_id=o.id) candidates FROM organizations o ORDER BY o.created_at DESC`);
   const audit=await sql('SELECT a.id,a.action,a.created_at,a.details,o.name company FROM hrdiary_platform_audit a LEFT JOIN organizations o ON o.id=a.workspace_id ORDER BY a.created_at DESC LIMIT 100');
-  return json({companies,audit});
+  const registrations=await sql("SELECT id,full_name,company_name,email,status,created_at FROM hrdiary_signup_requests ORDER BY created_at DESC LIMIT 250");
+  return json({companies,audit,registrations});
  }catch{return json({error:'Unable to load platform data'},500);}
 }

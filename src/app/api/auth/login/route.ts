@@ -3,6 +3,7 @@ import { assertSameOrigin, checkPassword, clearDemoLoginFailures, createDemoSess
   isDemoLoginRateLimited, isDemoModeRequested, isStagingDemoMode, normalizeEmail, recordDemoLoginFailure } from '@/lib/auth';
 import { one, sql } from '@/lib/db';
 import { json } from '@/lib/http';
+import {verifiedPasswordLogin} from '@/lib/company-auth';
 
 function demoRateKeys(request: NextRequest, email: string): string[] {
   const ip = request.headers.get('x-nf-client-connection-ip')
@@ -55,6 +56,12 @@ export async function POST(request:NextRequest) {
     if(Number(recentlyFailed?.count||0)>=10) return json({error:'Too many attempts. Try again in 15 minutes.'},429);
     const user=await one<{id:string;full_name:string;email:string;password_hash:string;role:string;active:boolean;must_change_password:boolean}>(
       'SELECT id,full_name,email,password_hash,role,active,must_change_password FROM users WHERE email=$1 LIMIT 1',[normalized]);
+    // Legacy employees keep local passwords; only mapped or new verified company admins use Supabase Auth.
+    const linked=(!user||user.role==='admin'&&await one('SELECT user_id FROM hrdiary_admin_identities WHERE user_id=$1',[user.id]))?await verifiedPasswordLogin(normalized,password):null;
+    if(linked){
+      await sql('INSERT INTO login_history(user_id,email,success) VALUES($1,$2,true)',[linked.id,normalized]);
+      const response=json({user:linked});await createSession(linked.id,response);return response;
+    }
     const valid=Boolean(user?.active && await checkPassword(password,user.password_hash));
     await sql('INSERT INTO login_history(user_id,email,success) VALUES($1,$2,$3)',[user?.id||null,normalized,valid]);
     if(!valid) return json({error:'Invalid credentials'},401);
