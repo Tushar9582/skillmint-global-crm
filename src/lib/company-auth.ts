@@ -9,7 +9,7 @@ export type Identity={id:string;email?:string;email_confirmed_at?:string;user_me
 export type CompanyLogin={id:string;full_name:string;email:string;role:'admin';active:boolean;must_change_password:boolean};
 export async function authPost(path:string,data:Record<string,unknown>){
  const r=await fetch(AUTH_BASE+path,{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify(data),cache:'no-store',signal:AbortSignal.timeout(10000)});
- const result=await r.json().catch(()=>({}));return {ok:r.ok,result};
+ const result=await r.json().catch(()=>({}));return {ok:r.ok,result,status:r.status};
 }
 export async function verifiedIdentity(token:unknown):Promise<Identity|null>{
  if(typeof token!=='string'||token.length>8000)return null;
@@ -47,7 +47,13 @@ export async function companyAccount(identity:Identity,fields?:{name:string;comp
 }
 export async function verifiedPasswordLogin(email:string,password:string){
  const auth=await authPost('/token?grant_type=password',{email,password});
- if(!auth.ok)return null;
+ if(!auth.ok){
+  const code=auth.result.error_code||auth.result.code;
+  if(code==='email_not_confirmed')throw new HttpError(403,'Confirm your email before signing in. Use Resend verification email below.');
+  if(auth.status===429)throw new HttpError(429,'Too many attempts. Try again later.');
+  if(auth.status>=500)throw new HttpError(503,'Authentication service temporarily unavailable.');
+  return null;
+ }
  const identity=await verifiedIdentity(auth.result.access_token);if(!identity)return null;
  if(!signupEnabled())throw new HttpError(403,'Your account is verified, but your company workspace is awaiting activation. Contact HrDiary support.');
  const meta=identity.user_metadata||{};

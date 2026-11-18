@@ -20,6 +20,16 @@ export function LoginForm() {
   const [error, setError] = useState('');
 
   useEffect(()=>{const code=new URLSearchParams(window.location.search).get('google');if(code)setError(code==='existing'?'Use your existing company credentials. Google linking is not available for existing employees or legacy users.':code==='activation'?'Workspace activation is pending security configuration.':code==='closed'?'Registration is closed.':'Google sign-in could not complete. Check provider configuration or try again.');},[]);
+  const [notice,setNotice]=useState('');
+  async function resendVerification(){
+    if(!email.trim()||submitting)return;
+    setSubmitting(true);setNotice('');setError('');
+    try{
+      const response=await fetch('/api/auth/resend-verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email.trim()})});
+      const data=await response.json();if(!response.ok)throw Error(data.error||'Unable to resend email');
+      setNotice(data.message);
+    }catch(e){setError(e instanceof Error?e.message:'Unable to send verification email');}finally{setSubmitting(false);}
+  }
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
@@ -113,6 +123,7 @@ export function LoginForm() {
             </button>
           </div>
 
+          {notice&&<p role="status" className="skillmint-auth-preview">{notice}</p>}
           {error && <div className="skillmint-auth-error" role="alert">{error}</div>}
 
           <button className="skillmint-auth-submit" type="submit" disabled={submitting}>
@@ -121,6 +132,7 @@ export function LoginForm() {
           </button>
         </form>
 
+        <p className="skillmint-auth-help"><button type="button" disabled={submitting||!email.trim()} onClick={()=>void resendVerification()} style={{background:'none',border:0,color:'#215b98',fontWeight:650,cursor:'pointer'}}>Resend verification email</button></p>
         <GoogleAuthButton/>
         <p className="skillmint-auth-help" style={{marginTop:22}}>New to HrDiary? <a href="/register" style={{fontWeight:750,color:'#215b98'}}>Sign up</a></p>
         <div className="skillmint-auth-copyright">© 2026 HrDiary. All rights reserved.</div>
