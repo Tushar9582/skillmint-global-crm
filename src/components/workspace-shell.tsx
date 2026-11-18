@@ -20,6 +20,7 @@ type NavItem={href:string;label:string;icon:LucideIcon;adminOnly?:boolean};
 const navItems:NavItem[]=[
   {href:'/company-leads',label:'Company Leads',icon:BriefcaseBusiness},
   {href:'/candidates',label:'Lead Bank & Resumes',icon:Users},
+  {href:'/resume-search',label:'Resume Search',icon:Search},
   {href:'/ai-resume-builder',label:'AI Resume Builder',icon:Sparkles},
   {href:'/applications',label:'Applications',icon:Workflow},
   {href:'/interviews',label:'Interviews',icon:CalendarDays},
@@ -47,7 +48,7 @@ export function WorkspaceShell({user:serverUser,branding,children}:{user:Current
   if(demo&&!demoRole)return null;
   const person=demo&&demoRole?DEMO_PEOPLE[demoRole]:null;
   const user:CurrentUser=person?{id:person.id,full_name:person.full_name,email:person.email,role:person.role,must_change_password:false}:serverUser;
-  const nav=navItems.filter(item=>(!item.adminOnly||user.role==='admin')&&(!(demo||stagingDemo)||item.href!=='/company-settings'));
+  const nav=navItems.filter(item=>(!item.adminOnly||user.role==='admin')&&(!(demo||stagingDemo)||!['/company-settings','/resume-search'].includes(item.href)));
   function submitSearch(event:FormEvent) {event.preventDefault();if(search.trim())router.push(`/candidates?q=${encodeURIComponent(search.trim())}`);}
   async function logout() {if(demo){window.location.href='/login';return;}setLoggingOut(true);await fetch('/api/auth/logout',{method:'POST'});window.location.href='/login';}
   const page=navItems.find(item=>item.href===pathname)?.label||pageTitles[pathname]||'Workspace';
