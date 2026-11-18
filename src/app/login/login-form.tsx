@@ -51,7 +51,7 @@ export function LoginForm() {
     <section className="skillmint-auth-story" aria-label="HrDiary recruitment platform">
       <div className="skillmint-auth-story-inner">
         <div className="skillmint-auth-brand">
-          <img src="/brand/hrdiary-mark.svg" alt="HrDiary" width="54" height="54" />
+          <img src="/brand/hrdiary-mark.svg" alt="HrDiary" width="54" height="54" style={{filter:"none"}} />
           <span><strong>HrDiary</strong><small>RECRUITMENT CRM</small></span>
         </div>
 
@@ -119,6 +119,7 @@ export function LoginForm() {
           </button>
         </form>
 
+        <div style={{marginTop:16,textAlign:'center'}}><a href="/platform-login" style={{fontWeight:800,color:'#215b98'}}>Super Admin sign in</a></div>
         <div className="skillmint-auth-assurance">
           <CheckCircle2 size={18}/>
           <span>Protected account access · Admin and Employee roles</span>
