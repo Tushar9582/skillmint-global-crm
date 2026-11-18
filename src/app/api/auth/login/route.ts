@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
 import { assertSameOrigin, checkPassword, clearDemoLoginFailures, createDemoSession, createSession, HttpError,
-  isDemoLoginRateLimited, isDemoModeRequested, isStagingDemoMode, normalizeEmail, recordDemoLoginFailure } from '@/lib/auth';
+  isDemoLoginRateLimited, isDemoModeRequested, isStagingDemoMode, normalizeEmail, recordDemoLoginFailure, revokeSession } from '@/lib/auth';
 import { one, sql } from '@/lib/db';
 import { json } from '@/lib/http';
 import {verifiedPasswordLogin} from '@/lib/company-auth';
+import {setOwnerCookie,clearOwnerCookie} from '@/lib/platform-auth';
 
 function demoRateKeys(request: NextRequest, email: string): string[] {
   const ip = request.headers.get('x-nf-client-connection-ip')
@@ -59,15 +60,24 @@ export async function POST(request:NextRequest) {
     // Legacy employees keep local passwords; only mapped or new verified company admins use Supabase Auth.
     const mapped=Boolean(user&&await one('SELECT user_id FROM hrdiary_admin_identities WHERE user_id=$1',[user.id]));
     const linked=(!user||mapped&&user.role==='admin')?await verifiedPasswordLogin(normalized,password):null;
-    if(linked){
-      await sql('INSERT INTO login_history(user_id,email,success) VALUES($1,$2,true)',[linked.id,normalized]);
-      const response=json({user:linked});await createSession(linked.id,response);return response;
+    if(linked?.kind==='platform'){
+      await sql('INSERT INTO login_history(user_id,email,success) VALUES(NULL,$1,true)',[normalized]);
+      const response=json({user:{id:linked.id,email:linked.email,role:'super_admin',must_change_password:false},destination:'/platform'});
+      await revokeSession(response);
+      setOwnerCookie(response,linked);
+      return response;
+    }
+    if(linked?.kind==='company'){
+      const account=linked.user;
+      await sql('INSERT INTO login_history(user_id,email,success) VALUES($1,$2,true)',[account.id,normalized]);
+      const response=json({user:account});await createSession(account.id,response);clearOwnerCookie(response);return response;
     }
     const valid=Boolean(!mapped && user?.active && await checkPassword(password,user.password_hash));
     await sql('INSERT INTO login_history(user_id,email,success) VALUES($1,$2,$3)',[user?.id||null,normalized,valid]);
     if(!valid) return json({error:'Invalid credentials'},401);
     const response=json({user:{id:user!.id,full_name:user!.full_name,email:user!.email,role:user!.role,must_change_password:user!.must_change_password}});
     await createSession(user!.id,response);
+    clearOwnerCookie(response);
     return response;
   } catch(error) {
     if(error instanceof HttpError) return json({error:error.message},error.status);

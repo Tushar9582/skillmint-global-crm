@@ -21,3 +21,10 @@ export async function signInOwner(email:string,password:string){
  if(!session.access_token||!await ownerFromToken(session.access_token))return null;
  return {token:session.access_token,ttl:Math.min(3600,Math.max(1,Number(session.expires_in)||3600))};
 }
+
+export function setOwnerCookie(response: import('next/server').NextResponse,session:{token:string;ttl:number}){
+ response.cookies.set(OWNER_COOKIE,session.token,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'strict',path:'/',maxAge:session.ttl});
+}
+export function clearOwnerCookie(response: import('next/server').NextResponse){
+ response.cookies.set(OWNER_COOKIE,'',{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'strict',path:'/',maxAge:0});
+}

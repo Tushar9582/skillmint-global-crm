@@ -61,9 +61,14 @@ export async function verifiedPasswordLogin(email:string,password:string){
   if(auth.status>=500)throw new HttpError(503,'Authentication service temporarily unavailable.');
   return null;
  }
- const identity=await verifiedIdentity(auth.result.access_token);if(!identity)return null;
+ const token=auth.result.access_token;
+ const identity=await verifiedIdentity(token);if(!identity||typeof token!=='string')return null;
+ // Platform ownership is determined solely by the server-verified Auth UID.
+ if(await one('SELECT auth_user_id FROM hrdiary_auth_platform_owner WHERE auth_user_id=$1',[identity.id])){
+   return {kind:'platform' as const,id:identity.id,email:identity.email||email,token,ttl:Math.min(3600,Math.max(1,Number(auth.result.expires_in)||3600))};
+ }
  const meta=identity.user_metadata||{};
  const fields=typeof meta.hrdiary_company==='string'&&typeof meta.hrdiary_name==='string'?companyFields(meta.hrdiary_name,meta.hrdiary_company):undefined;
  const pending=await one<{full_name:string;company_name:string}>("SELECT full_name,company_name FROM hrdiary_signup_requests WHERE lower(email)=lower($1) AND status='pending' ORDER BY created_at DESC LIMIT 1",[identity.email]);
- return companyAccount(identity,pending?companyFields(pending.full_name,pending.company_name):fields);
+ return {kind:'company' as const,user:await companyAccount(identity,pending?companyFields(pending.full_name,pending.company_name):fields)};
 }

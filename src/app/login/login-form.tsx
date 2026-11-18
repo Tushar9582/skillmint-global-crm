@@ -7,6 +7,7 @@ import { ArrowRight, BriefcaseBusiness, CheckCircle2, Eye, EyeOff, FileText,
 
 type LoginReply = {
   error?: string;
+  destination?: '/platform';
   user?: { must_change_password?: boolean };
 };
 
@@ -51,7 +52,7 @@ export function LoginForm() {
           : 'Unable to sign in. Please try again.'));
         return;
       }
-      window.location.replace(result.user?.must_change_password ? '/profile' : '/dashboard');
+      window.location.replace(result.destination === '/platform' ? '/platform' : result.user?.must_change_password ? '/profile' : '/dashboard');
     } catch {
       setError('Could not reach the login service. Check your connection and try again.');
     } finally {
