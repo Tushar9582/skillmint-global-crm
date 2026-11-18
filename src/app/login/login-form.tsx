@@ -48,11 +48,11 @@ export function LoginForm() {
   }
 
   return <main className="skillmint-auth">
-    <section className="skillmint-auth-story" aria-label="SkillMint Global recruitment platform">
+    <section className="skillmint-auth-story" aria-label="HrDiary recruitment platform">
       <div className="skillmint-auth-story-inner">
         <div className="skillmint-auth-brand">
-          <img src="/brand/skillmint-global-mark.png" alt="SkillMint Global" width="54" height="54" />
-          <span><strong>skillmint</strong><small>G L O B A L</small></span>
+          <img src="/brand/hrdiary-mark.svg" alt="HrDiary" width="54" height="54" />
+          <span><strong>HrDiary</strong><small>RECRUITMENT CRM</small></span>
         </div>
 
         <div className="skillmint-auth-hero">
@@ -68,7 +68,7 @@ export function LoginForm() {
 
         <div className="skillmint-auth-story-bottom">
           <ShieldCheck size={17}/>
-          <span>Private Recruitment Workspace · SkillMint Global</span>
+          <span>Private Recruitment Workspace · HrDiary</span>
         </div>
       </div>
     </section>
@@ -76,7 +76,7 @@ export function LoginForm() {
     <section className="skillmint-auth-form-side">
       <div className="skillmint-auth-form-shell">
         <span className="skillmint-auth-welcome"><span className="skillmint-auth-welcome-dot"/> WELCOME BACK</span>
-        <h2>Sign in to SkillMint</h2>
+        <h2>Sign in to HrDiary</h2>
         <p className="skillmint-auth-subtitle">Enter your work credentials to access your recruitment dashboard.</p>
 
         {preview && <div className="skillmint-auth-preview" role="status">
@@ -89,7 +89,7 @@ export function LoginForm() {
             <Mail size={20} aria-hidden="true"/>
             <input id="skillmint-email" name="email" type="email" autoComplete="username"
               inputMode="email" autoCapitalize="none" spellCheck={false}
-              placeholder="name@skillmintglobal.com" value={email} maxLength={254}
+              placeholder="name@company.com" value={email} maxLength={254}
               onChange={e => {setEmail(e.target.value);if(error)setError('');}}
               required aria-invalid={Boolean(error)} disabled={submitting} />
           </div>
@@ -124,8 +124,13 @@ export function LoginForm() {
           <span>Protected account access · Admin and Employee roles</span>
         </div>
         <p className="skillmint-auth-help">Need an account or password reset?<br />
-          Contact your SkillMint administrator. Public sign-up is disabled.</p>
-        <div className="skillmint-auth-copyright">© 2026 SkillMint Global. All rights reserved.</div>
+          Contact your company administrator for access.</p>
+        <div style={{marginTop:20,textAlign:'center',padding:16,border:'1px solid #dce6f2',borderRadius:12,background:'#f5f9ff'}}>
+          <strong style={{color:'#143b65',fontSize:14}}>New company workspace</strong>
+          <p style={{fontSize:12,color:'#526d89',margin:'7px 0 12px'}}>Explore the upcoming HrDiary SaaS experience. Registration is not enabled yet.</p>
+          <a href="/saas-preview" style={{color:'#1c5794',fontWeight:800,fontSize:14,textDecoration:'underline'}}>View SaaS design preview →</a>
+        </div>
+        <div className="skillmint-auth-copyright">© 2026 HrDiary. All rights reserved.</div>
       </div>
     </section>
   </main>;

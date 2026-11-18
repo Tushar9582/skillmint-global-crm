@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata:Metadata={
-  title:'SkillMint Global | Recruitment CRM',
+  title:'HrDiary | Recruitment CRM',
   description:'Secure company leads, candidates, resume management and daily recruitment workflows.',
 };
 

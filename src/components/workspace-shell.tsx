@@ -54,7 +54,7 @@ export function WorkspaceShell({user:serverUser,children}:{user:CurrentUser;chil
     <div className="app-frame">
       {open&&<button className="mobile-backdrop" onClick={()=>setOpen(false)} aria-label="Close navigation"/>}
       <aside className={`sidebar ${open?'sidebar-open':''}`}>
-        <div className="sidebar-brand brand white"><img className="brand-mark brand-logo" src="/brand/skillmint-global-mark.png" alt="SkillMint Global logo"/><span><strong>skillmint</strong><small>G L O B A L</small></span><button className="sidebar-close" onClick={()=>setOpen(false)} aria-label="Close"><X size={20}/></button></div>
+        <div className="sidebar-brand brand white"><img className="brand-mark brand-logo" src="/brand/hrdiary-mark.svg" alt="HrDiary logo"/><span><strong>HrDiary</strong><small>RECRUITMENT CRM</small></span><button className="sidebar-close" onClick={()=>setOpen(false)} aria-label="Close"><X size={20}/></button></div>
         <Link href="/dashboard" onClick={()=>setOpen(false)} className="workspace-switch"><LayoutDashboard size={18}/><span>Lead Dashboard</span><span className="workspace-switch-arrow">↗</span></Link>
         <div className="sidebar-workspace-label">Lead Management<small>Recruitment & client pipeline</small></div>
         <nav className="nav-scroll" aria-label="CRM navigation">
