@@ -165,6 +165,12 @@ function CandidateIntake({initialTab,onClose,onSaved}:{initialTab:'manual'|'resu
       const values={...form,skills:String(form.skills||'').split(',').map(s=>s.trim()).filter(Boolean),
         experience_years:num(form.experience_years),expected_ctc:num(form.expected_ctc),source:'resume'};
       let out:{created?:boolean;duplicate?:boolean;message?:string;existing_candidate_id?:string|null;existing_candidate_name?:string|null;data?:{candidate_id?:string}};
+      if(upload.detailsOnly) {
+        const details={...values,owner_id:owner(),notes:[form.current_designation&&'Current designation: '+String(form.current_designation),form.current_company&&'Current company: '+String(form.current_company),form.education&&'Education: '+String(form.education),form.notes,'Resume details imported locally; original file not stored.'].filter(Boolean).join('\n')};
+        const saved=await requestJson<{data?:Row}>('/api/v1/candidates',{method:'POST',body:JSON.stringify(details)});
+        if(!saved.data?.id)throw Error('Candidate save not confirmed. Check the lead bank before retrying.');
+        onSaved();return;
+      }
       if(isDemoClient())out=await saveDemoResumeCandidate(values,upload.file,upload.sha256,owner());
       else {
         const response=await fetch('/api/v1/resumes',{method:'POST',body:body(upload.file,{fields:JSON.stringify(values)})});
@@ -199,7 +205,7 @@ function CandidateIntake({initialTab,onClose,onSaved}:{initialTab:'manual'|'resu
         !upload?<div className="modal-content"><ResumeDropzone onExtracted={extracted}/></div>:
         <div>
           <div className="modal-content">
-            <div className="alert"><FileText size={16}/> {upload.file.name} — Candidate Source: <b>Resume</b>. {missing.length?`Please review ${missing.length} highlighted field(s) not found in the resume.`:'All key details were detected; review before saving.'}</div>
+            <div className="alert"><FileText size={16}/> {upload.file.name} — Candidate Source: <b>Resume</b>. {upload.detailsOnly?'Details only: original file will not be stored. ':''} {missing.length?`Please review ${missing.length} highlighted field(s) not found in the resume.`:'All key details were detected; review before saving.'}</div>
             {duplicate&&<div className="alert danger">{duplicate.message||'A candidate with this email or phone already exists.'}{duplicate.existing_candidate_name?` Existing candidate: ${duplicate.existing_candidate_name}.`:''}
               <div className="result-actions">{duplicate.existing_candidate_id&&duplicate.kind!=='exact'&&<button type="button" className="btn soft" disabled={busy} onClick={()=>void attach()}>Attach Resume to Existing Candidate</button>}<button type="button" className="btn ghost" onClick={reset}>Choose Another Resume</button></div></div>}
           </div>
