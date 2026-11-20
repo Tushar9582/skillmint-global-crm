@@ -43,15 +43,18 @@ export function validateResume(name:string,bytes:Buffer): 'application/pdf'|'app
 export async function extractText(bytes:Buffer,mime:string): Promise<string> {
   try {
     if(mime==='application/pdf') {
-      const pdfParse=(await import('pdf-parse')).default;
+      // Avoid the v1.1.1 package entry point's test-file/debug side effect in serverless ESM.
+      const pdfParse=(await import('pdf-parse/lib/pdf-parse.js')).default;
       const parsed=await pdfParse(bytes);
       return parsed.text.slice(0,150000);
     }
     const mammoth=await import('mammoth');
     const parsed=await mammoth.extractRawText({buffer:bytes});
     return parsed.value.slice(0,150000);
-  } catch {
-    return ''; // Scanned PDF, malformed or unsupported layout -> manual correction.
+  } catch(error) {
+    // Do not log resume contents, filenames or parser messages containing document data.
+    console.error('[resume] extraction failed', {format:mime==='application/pdf'?'pdf':'docx',errorType:error instanceof Error?error.name:'unknown',code:error && typeof error==='object' && 'code' in error && typeof error.code==='string' && /^[A-Z0-9_]{1,40}$/.test(error.code)?error.code:undefined});
+    throw new HttpError(422,'Document parser could not read this file. Try a text-based PDF or DOCX, or enter candidate details manually.');
   }
 }
 
