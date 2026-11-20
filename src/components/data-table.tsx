@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, useRef, type FormEvent } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CheckCircle, Download, Edit3, Eye, FileText, Plus, Search, Trash2, UploadCloud, X } from 'lucide-react';
 import { CATALOG, type ResourceDefinition, type Field } from '@/lib/catalog';
@@ -103,9 +103,10 @@ function RecordForm({resource,current,onClose,onSaved,embedded=false}:{resource:
       for(const field of fields) {
         if(field.type==='skills'&&typeof values[field.name]==='string')values[field.name]=String(values[field.name]).split(',').map(v=>v.trim()).filter(Boolean);
       }
-      await requestJson(`/api/v1/${resource}${current?`/${current.id}`:''}`,{
+      const saved=await requestJson<{data?:Row}>(`/api/v1/${resource}${current?`/${current.id}`:''}`,{
         method:current?'PATCH':'POST',body:JSON.stringify(values),
       });
+      if(!saved.data?.id)throw Error('Database save not confirmed. Please check the record before retrying.');
       onSaved();
     } catch(error){setError(error instanceof Error?error.message:'Unable to save');}
     finally{setBusy(false);}
@@ -163,7 +164,7 @@ function CandidateIntake({initialTab,onClose,onSaved}:{initialTab:'manual'|'resu
       const num=(v:unknown)=>v===''||v==null?null:Number(v);
       const values={...form,skills:String(form.skills||'').split(',').map(s=>s.trim()).filter(Boolean),
         experience_years:num(form.experience_years),expected_ctc:num(form.expected_ctc),source:'resume'};
-      let out:{duplicate?:boolean;message?:string;existing_candidate_id?:string|null;existing_candidate_name?:string|null};
+      let out:{created?:boolean;duplicate?:boolean;message?:string;existing_candidate_id?:string|null;existing_candidate_name?:string|null;data?:{candidate_id?:string}};
       if(isDemoClient())out=await saveDemoResumeCandidate(values,upload.file,upload.sha256,owner());
       else {
         const response=await fetch('/api/v1/resumes',{method:'POST',body:body(upload.file,{fields:JSON.stringify(values)})});
@@ -171,6 +172,7 @@ function CandidateIntake({initialTab,onClose,onSaved}:{initialTab:'manual'|'resu
         if(!response.ok&&response.status!==409)throw new Error(String((out as {error?:string}).error||'Unable to create candidate'));
       }
       if(out.duplicate){setDuplicate(out);return;}
+      if(!isDemoClient()&&(!out.created||!out.data?.candidate_id))throw Error('Resume save not confirmed. Check the lead bank before retrying.');
       onSaved();
     } catch(err){setError(err instanceof Error?err.message:'Unable to create candidate');}
     finally{setBusy(false);}
@@ -339,6 +341,8 @@ export function DataTablePage({resource}:{resource:string}) {
   const labelOf=(field:string,value:unknown)=>cfg.label(resource,field,value);
   const user=useCurrentUser();
   const [rows,setRows]=useState<Row[]>([]);
+  const loadVersion=useRef(0);
+  const [notice,setNotice]=useState('');
   const [loading,setLoading]=useState(true);
   const [search,setSearch]=useState('');
   const [stage,setStage]=useState('');
@@ -363,21 +367,26 @@ export function DataTablePage({resource}:{resource:string}) {
       .filter(e=>e.active).map(e=>({id:String(e.id),label:String(e.full_name)})))).catch(()=>{});
   },[canBulkAssign]);
   const load=useCallback(async()=>{
+    const version=++loadVersion.current;
     setLoading(true);setError('');
     try {
       const qs=new URLSearchParams({page:String(page),limit:'50'});
       if(search.trim())qs.set('q',search.trim());
       if(stage)qs.set('stage',stage);
       const result=await requestJson<{data:Row[];has_more:boolean}>(`/api/v1/${resource}?${qs}`);
+      if(version!==loadVersion.current)return;
+      if(!Array.isArray(result.data))throw Error('Invalid database response');
       setRows(result.data);setHasMore(result.has_more);setChecked([]);
-    }catch(e){setError(e instanceof Error?e.message:'Cannot load records');}
-    finally{setLoading(false);}
+    }catch(e){if(version===loadVersion.current)setError(e instanceof Error?e.message:'Cannot load records');}
+    finally{if(version===loadVersion.current)setLoading(false);}
   },[resource,search,stage,page]);
-  useEffect(()=>{void load();},[load]);
+  useEffect(()=>{void load();return()=>{loadVersion.current++;};},[load]);
   useEffect(()=>{const q=new URLSearchParams(window.location.search);const candidates=resource==='candidates';if(candidates&&q.get('mode')==='resume')setIntake('resume');else if(q.has('new'))candidates?setIntake('manual'):setEdit(null);if(q.has('q'))setSearch(q.get('q')||'');},[resource]);
   const complete=()=>{setCompletion(null);setSelected(null);void load();};
-  const save=()=>{setEdit(false);setSelected(null);void load();};
-  const intakeSaved=()=>{setIntake(false);setSearch('');setStage('');setPage(1);void load();};
+  const savedNotice=()=>setNotice(isDemoClient()?'Saved in this demo browser.':'Saved to your company cloud database.');
+  const resetAndLoad=()=>{if(search||stage||page!==1){setSearch('');setStage('');setPage(1);}else void load();};
+  const save=()=>{setEdit(false);setSelected(null);savedNotice();resetAndLoad();};
+  const intakeSaved=()=>{setIntake(false);savedNotice();resetAndLoad();};
   async function convertLead(){
     if(!selected||!window.confirm('Convert this company lead to a client account?'))return;
     try{await requestJson(`/api/v1/company-leads/${selected.id}/convert`,{method:'POST'});setSelected(null);void load();}
@@ -405,8 +414,9 @@ export function DataTablePage({resource}:{resource:string}) {
       <span className="record-count">{rows.length} records on this page</span></div>
     {canLeadAllocation&&<LeadAssignmentPanel resource={resource} search={search} stage={stage} selectedIds={checked} employees={employees} onAssigned={()=>void load()} onClear={()=>setChecked([])}/>}
     {canBulkAssign&&checked.length>0&&<div className="toolbar panel"><strong>{checked.length} selected</strong>{!canLeadAllocation&&<><select className="form-input" aria-label="Assign selected records to" value={bulkOwner} onChange={e=>setBulkOwner(e.target.value)}><option value="">Select receiving employee</option>{employees.map(e=><option key={e.id} value={e.id}>{e.label}</option>)}</select><button className="btn primary" disabled={!bulkOwner||bulkBusy} onClick={bulkAssign}>{bulkBusy?'Assigning…':'Assign Selected'}</button></>}{canDelete&&<button className="btn ghost" disabled={bulkBusy} onClick={()=>void deleteLeads(checked)}><Trash2 size={16}/> Delete Selected</button>}<button className="btn ghost" onClick={()=>setChecked([])}>Clear</button></div>}
-    {error&&<div className="alert danger">{error}</div>}
-    <div className="table-panel panel"><div className="panel-header"><h2>All Records</h2><span className="muted">Select a row to view details</span></div><div className="table-scroll" tabIndex={0} aria-label={`${def.plural} records, scroll horizontally to see more columns`}><table className={resource==='candidates'?'candidate-table':undefined}><thead><tr>{canBulkAssign&&<th><input type="checkbox" aria-label="Select all on this page" checked={rows.length>0&&checked.length===rows.length} onChange={e=>setChecked(e.target.checked?rows.map(row=>String(row.id)):[])}/></th>}{def.columns.map(col=><th key={col}>{friendly(col)}</th>)}<th>Action</th></tr></thead><tbody>{loading?<tr><td colSpan={def.columns.length+1+Number(canBulkAssign)} className="table-empty">Loading records…</td></tr>:rows.length===0?<tr><td colSpan={def.columns.length+1+Number(canBulkAssign)} className="table-empty">No records yet. Create your first {def.singular.toLowerCase()}.</td></tr>:rows.map(row=><tr key={String(row.id)}>{canBulkAssign&&<td><input type="checkbox" aria-label={`Select ${createLabel(resource,row)}`} checked={checked.includes(String(row.id))} onChange={e=>setChecked(old=>e.target.checked?[...old,String(row.id)]:old.filter(id=>id!==row.id))}/></td>}{def.columns.map((col,index)=><td key={col}>{index===0?<button className="record-link" onClick={()=>setSelected(row)}>{displayRow(row,col,labelOf)}</button>:displayRow(row,col,labelOf)}</td>)}<td><span className="table-row-actions"><button className="table-action" onClick={()=>resource==='followups'&&row.status==='pending'?setCompletion(row):setSelected(row)}>{resource==='followups'&&row.status==='pending'?'Log':'View'} <ArrowRight size={13}/></button>{canDelete&&<button className="table-action" onClick={()=>void deleteLeads([String(row.id)])}><Trash2 size={13}/> Delete</button>}</span></td></tr>)}</tbody></table></div>
+    {notice&&<div className="alert" role="status">{notice}</div>}
+    {error&&<div className="alert danger" role="alert">{error} <button className="btn ghost small" onClick={()=>void load()}>Retry</button></div>}
+    <div className="table-panel panel"><div className="panel-header"><h2>All Records</h2><span className="muted">Select a row to view details</span></div><div className="table-scroll" tabIndex={0} aria-label={`${def.plural} records, scroll horizontally to see more columns`}><table className={resource==='candidates'?'candidate-table':undefined}><thead><tr>{canBulkAssign&&<th><input type="checkbox" aria-label="Select all on this page" checked={rows.length>0&&checked.length===rows.length} onChange={e=>setChecked(e.target.checked?rows.map(row=>String(row.id)):[])}/></th>}{def.columns.map(col=><th key={col}>{friendly(col)}</th>)}<th>Action</th></tr></thead><tbody>{loading?<tr><td colSpan={def.columns.length+1+Number(canBulkAssign)} className="table-empty">Loading records…</td></tr>:rows.length===0?<tr><td colSpan={def.columns.length+1+Number(canBulkAssign)} className="table-empty">{error?"Records could not be loaded. Retry before adding duplicates.":search||stage?"No records match the current filters.":`No records yet. Create your first ${def.singular.toLowerCase()}.`}</td></tr>:rows.map(row=><tr key={String(row.id)}>{canBulkAssign&&<td><input type="checkbox" aria-label={`Select ${createLabel(resource,row)}`} checked={checked.includes(String(row.id))} onChange={e=>setChecked(old=>e.target.checked?[...old,String(row.id)]:old.filter(id=>id!==row.id))}/></td>}{def.columns.map((col,index)=><td key={col}>{index===0?<button className="record-link" onClick={()=>setSelected(row)}>{displayRow(row,col,labelOf)}</button>:displayRow(row,col,labelOf)}</td>)}<td><span className="table-row-actions"><button className="table-action" onClick={()=>resource==='followups'&&row.status==='pending'?setCompletion(row):setSelected(row)}>{resource==='followups'&&row.status==='pending'?'Log':'View'} <ArrowRight size={13}/></button>{canDelete&&<button className="table-action" onClick={()=>void deleteLeads([String(row.id)])}><Trash2 size={13}/> Delete</button>}</span></td></tr>)}</tbody></table></div>
       <div className="table-footer"><span>Page {page}</span><div><button disabled={page<=1||loading} onClick={()=>setPage(x=>x-1)}><ArrowLeft size={15}/> Prev</button><button disabled={!hasMore||loading} onClick={()=>setPage(x=>x+1)}>Next <ArrowRight size={15}/></button></div></div>
     </div>
     {edit!==false&&<RecordForm resource={resource} current={edit} onClose={()=>setEdit(false)} onSaved={save}/>}

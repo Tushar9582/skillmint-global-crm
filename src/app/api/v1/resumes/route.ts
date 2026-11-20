@@ -4,7 +4,7 @@ import { HttpError, normalizeEmail, normalizePhone } from '@/lib/auth';
 import { audit } from '@/lib/audit';
 import { one, sql, transaction } from '@/lib/db';
 import { getRecord, UUID } from '@/lib/records';
-import { downloadResume, removeResume, storeResume } from '@/lib/storage';
+import { downloadResume, removeResume, storeResume, requirePersistentResumeStorage } from '@/lib/storage';
 import { extractText, parseResume, sha256, validateResume } from '@/lib/resume';
 import { scanResume } from '@/lib/antivirus';
 import { workflowSettings } from '@/lib/crm-config';
@@ -24,6 +24,8 @@ export const POST=api(async(request,actor)=>{
   const form=await request.formData();
   const file=form.get('file');
   if(!(file instanceof File)) throw new HttpError(400,'Please select a PDF or DOCX resume');
+  if(process.env.NODE_ENV==='production'&&file.size>4*1024*1024)throw new HttpError(413,'Resume must be 4 MB or smaller on this deployment.');
+  requirePersistentResumeStorage();
   const bytes=Buffer.from(await file.arrayBuffer());
   const mime=validateResume(file.name,bytes);
   await scanResume(bytes);
@@ -140,7 +142,9 @@ export const POST=api(async(request,actor)=>{
     return json({created:true,data:created,parsed,
       message:parsed.parse_status==='ready'?'Candidate lead created from resume':'Candidate lead created; please review missing extracted fields.'},201);
   } catch(error) {
-    await removeResume(key);
+    // Verify that no metadata committed before compensating a failed upload.
+    // If the DB is unreachable, retain the private object rather than risk deleting a committed file.
+    try{const linked=await one('SELECT id FROM resume_versions WHERE organization_id=$1 AND storage_key=$2 UNION ALL SELECT id FROM duplicate_reviews WHERE organization_id=$1 AND upload_key=$2 LIMIT 1',[actor.organization_id,key]);if(!linked)await removeResume(key);}catch{console.error('[resume] cleanup deferred');}
     throw error;
   }
 });

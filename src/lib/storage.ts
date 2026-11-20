@@ -1,12 +1,21 @@
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
-import { resolve, dirname, join } from 'node:path';
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { resolve, dirname } from 'node:path';
+import { HttpError } from './auth';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 type Driver='local'|'spaces'|'s3'|'supabase';
 const driver=(process.env.STORAGE_DRIVER || 'local') as Driver;
 const bucket=process.env.STORAGE_BUCKET || 'skillmint-resumes';
 
+export function requirePersistentResumeStorage(){
+ if(process.env.NODE_ENV!=='production')return;
+ if(!['spaces','s3','supabase'].includes(driver))throw new HttpError(503,'Cloud resume storage is not configured. No file has been saved. Contact your administrator.');
+ if(driver==='supabase'&&(!process.env.STORAGE_ENDPOINT||!process.env.STORAGE_ACCESS_KEY||!process.env.STORAGE_SECRET_KEY))throw new HttpError(503,'Supabase Storage credentials are missing. No file has been saved.');
+}
+export async function resumeStorageReady():Promise<boolean>{
+ try{requirePersistentResumeStorage();if(driver==='local')return false;await s3().send(new ListObjectsV2Command({Bucket:bucket,MaxKeys:1}),{abortSignal:AbortSignal.timeout(5000)});return true;}catch{return false;}
+}
 function s3(): S3Client {
   if(!['spaces','s3','supabase'].includes(driver)) throw new Error('Cloud object storage is not configured');
   if(driver==='supabase' && (!process.env.STORAGE_ENDPOINT || !process.env.STORAGE_ACCESS_KEY || !process.env.STORAGE_SECRET_KEY))
@@ -28,6 +37,7 @@ function safeFile(key: string): string {
 }
 
 export async function storeResume(key: string,content:Buffer,mime: string): Promise<void> {
+  requirePersistentResumeStorage();
   if(driver==='local') {
     if(process.env.NODE_ENV==='production') throw new Error('Local resume storage must not be used in production');
     const path=safeFile(key);
@@ -47,6 +57,7 @@ export async function removeResume(key: string): Promise<void> {
 }
 
 export async function downloadResume(key: string,inlinePdf=false): Promise<{url?:string;bytes?:Buffer}> {
+  requirePersistentResumeStorage();
   if(driver==='local') return {bytes:await readFile(safeFile(key))};
   return {url:await getSignedUrl(s3(),new GetObjectCommand({Bucket:bucket,Key:key,
     ResponseContentDisposition:inlinePdf?'inline':undefined}),{expiresIn:120})};

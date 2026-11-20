@@ -8,8 +8,9 @@ import { emptyRecruiterProgress, isLeadResource, parseAssignmentRange, parseProg
 /** Browser-only CRM simulation. It is intentionally isolated from API/database data. */
 type Row=Record<string,unknown>;
 const KEY='skillmint-development-demo-v1';
+// Production browser data is available only in a server-authorized isolated workspace.
 const enabled=()=>process.env.NODE_ENV==='development'&&process.env.NEXT_PUBLIC_DEV_DEMO_MODE==='true'
-  ||process.env.NODE_ENV==='production'&&process.env.NEXT_PUBLIC_DEMO_MODE==='true';
+  ||process.env.NODE_ENV==='production'&&typeof document!=='undefined'&&document.querySelector('[data-hd-workspace-mode="isolated-demo"]')!==null;
 const admin={id:'00000000-0000-4000-8000-000000000001',full_name:'SkillMint Development Admin',email:'development-admin@skillmint.local',role:'admin',active:true};
 const demoRecruiters=[
   {id:'00000000-0000-4000-8000-000000000002',full_name:'Demo Recruiter A',email:'recruiter-a@demo.skillmint.local',role:'employee',team:'Recruitment',active:true},

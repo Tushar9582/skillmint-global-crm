@@ -34,15 +34,15 @@ const pageTitles:Record<string,string>={
   '/clients':'Client Setup','/jobs':'Job Requirement Setup',
 };
 
-export function WorkspaceShell({user:serverUser,branding,children}:{user:CurrentUser;branding?:{name:string;logoUrl:string|null};children:ReactNode}) {
+export function WorkspaceShell({user:serverUser,branding,isolatedDemo=false,developmentDemo=false,children}:{user:CurrentUser;branding?:{name:string;logoUrl:string|null};isolatedDemo?:boolean;developmentDemo?:boolean;children:ReactNode}) {
   const pathname=usePathname();
   const router=useRouter();
   const [open,setOpen]=useState(false);
   const [search,setSearch]=useState('');
   const [loggingOut,setLoggingOut]=useState(false);
-  const demo=process.env.NODE_ENV==='development' && process.env.NEXT_PUBLIC_DEV_DEMO_MODE==='true';
-  const stagingDemo=process.env.NODE_ENV==='production' && process.env.NEXT_PUBLIC_DEMO_MODE==='true';
-  const directDemo=demo || process.env.NEXT_PUBLIC_DEMO_AUTO_ACCESS==='true';
+  const demo=developmentDemo;
+  const stagingDemo=isolatedDemo;
+  const directDemo=demo || (stagingDemo&&process.env.NEXT_PUBLIC_DEMO_AUTO_ACCESS==='true');
   const [demoRole,setRole]=useState<Role|null>(null);
   useEffect(()=>{if(demo)setRole(getDemoRole());},[demo]);
   if(demo&&!demoRole)return null;
@@ -50,10 +50,10 @@ export function WorkspaceShell({user:serverUser,branding,children}:{user:Current
   const user:CurrentUser=person?{id:person.id,full_name:person.full_name,email:person.email,role:person.role,must_change_password:false}:serverUser;
   const nav=navItems.filter(item=>(!item.adminOnly||user.role==='admin')&&(!(demo||stagingDemo)||!['/company-settings','/resume-search'].includes(item.href)));
   function submitSearch(event:FormEvent) {event.preventDefault();if(search.trim())router.push(`/candidates?q=${encodeURIComponent(search.trim())}`);}
-  async function logout() {if(demo){window.location.href='/login';return;}setLoggingOut(true);await fetch('/api/auth/logout',{method:'POST'});window.location.href='/login';}
+  async function logout() {if(demo){window.location.href='/login';return;}setLoggingOut(true);try{const response=await fetch('/api/auth/logout',{method:'POST',cache:'no-store'});if(!response.ok)throw Error('Logout failed');window.location.replace('/login');}catch{setLoggingOut(false);window.alert('Sign out could not complete. Please try again.');}}
   const page=navItems.find(item=>item.href===pathname)?.label||pageTitles[pathname]||'Workspace';
   return <CurrentUserContext.Provider value={user}>
-    <div className="app-frame">
+    <div className="app-frame" data-hd-workspace-mode={stagingDemo?"isolated-demo":demo?"development-demo":"cloud"}>
       {open&&<button className="mobile-backdrop" onClick={()=>setOpen(false)} aria-label="Close navigation"/>}
       <aside className={`sidebar ${open?'sidebar-open':''}`}>
         <div className="sidebar-brand brand white"><img key={branding?.logoUrl||"default"} className="brand-mark brand-logo hd-tenant-logo" src={branding?.logoUrl||"/brand/hrdiary-mark.svg"} alt="Company logo" onError={e=>{if(!e.currentTarget.src.endsWith("/brand/hrdiary-mark.svg"))e.currentTarget.src="/brand/hrdiary-mark.svg";}}/><span className="hd-tenant-name"><strong title={branding?.name||"HrDiary"}>{branding?.name||"HrDiary"}</strong><small>{branding?"POWERED BY HRDIARY":"RECRUITMENT CRM"}</small></span><button className="sidebar-close" onClick={()=>setOpen(false)} aria-label="Close"><X size={20}/></button></div>

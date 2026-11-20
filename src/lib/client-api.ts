@@ -5,7 +5,8 @@ export async function requestJson<T=Record<string,unknown>>(url:string,init?:Req
   const response=await fetch(url,{cache:'no-store',...init,
     headers:{...(init?.body instanceof FormData?{}:{'Content-Type':'application/json'}),...init?.headers}});
   let payload:Record<string,unknown>={};
-  try {payload=await response.json();} catch { /* a server error without JSON */ }
+  try {payload=await response.json();} catch { throw new Error(response.ok?'Unexpected server response. No save has been confirmed.':`Request failed (${response.status}). Please retry.`); }
+  if(!payload||typeof payload!=='object')throw new Error('Unexpected server response. No save has been confirmed.');
   if(!response.ok)throw new Error(String(payload.error||`Request failed (${response.status})`));
   return payload as T;
 }
