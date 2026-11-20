@@ -187,28 +187,11 @@ export function assertSameOrigin(request: NextRequest): void {
     if(!allowed.has(actual)) throw new HttpError(403,'Invalid origin');
     return;
   }
-  const parseOrigin=(value:string|undefined)=>{
-    try {return value?new URL(value).origin:null;} catch {return null;}
-  };
-  const expected=parseOrigin(process.env.APP_ORIGIN || request.nextUrl.origin);
+  // This branch is an isolated test deployment, not intended for merging into main.
+  // Pin its public origin instead of accepting a possibly inherited production APP_ORIGIN
+  // or trusting arbitrary proxy/request host headers. Keep exact origin comparison.
+  const expected='https://testing-virustotal-resume--skillmintcrm.netlify.app';
   if(actual===expected)return;
-
-  // Netlify can call a Next.js server function through an internal hostname,
-  // so request.nextUrl.origin may differ from the public browser Origin.
-  // Only the isolated demo is permitted to use this deployment allowlist;
-  // normal production CRM sessions retain the strict APP_ORIGIN check above.
-  if(isStagingDemoMode()) {
-    const allowed=new Set([
-      parseOrigin(process.env.URL),
-      parseOrigin(process.env.DEPLOY_PRIME_URL),
-      parseOrigin(process.env.DEPLOY_URL),
-      parseOrigin(process.env.DEMO_PUBLIC_ORIGIN),
-      'https://skillmintcrm.netlify.app',
-    ]);
-    if(/^[a-z0-9-]{1,63}$/.test(process.env.SITE_NAME||''))
-      allowed.add(`https://${process.env.SITE_NAME}.netlify.app`);
-    if(actual.startsWith('https://') && allowed.has(actual))return;
-  }
   throw new HttpError(403,'Invalid origin');
 }
 
