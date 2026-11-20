@@ -2,13 +2,21 @@ import net from 'node:net';
 import { createHash } from 'node:crypto';
 import { HttpError } from './auth';
 
+const SYNTHETIC_FIXTURE_SHA256='a9203182e3bd945ba49f1ea3c68c366d8d6bee83697bd5f44a3406a4ccd655f6';
+
 // ClamAV clamd INSTREAM protocol. In production, uploads fail closed if no
 // scanner is configured. This prevents uploaded documents from skipping scanning.
 export async function scanResume(data:Buffer):Promise<void> {
-  const provider=process.env.ANTIVIRUS_PROVIDER||'clamav';
-  if(provider==='virustotal') return scanVirusTotalFixture(data);
-  if(provider!=='clamav') throw new HttpError(503,'Unknown antivirus provider');
-  const host=process.env.CLAMAV_HOST;
+  const provider=(process.env.ANTIVIRUS_PROVIDER||'clamav').trim().toLowerCase();
+  if(provider==='virustotal') {
+    const hash=createHash('sha256').update(data).digest('hex');
+    // Only the specific, reviewed fictional PDF is eligible for public test scanning.
+    if(hash===SYNTHETIC_FIXTURE_SHA256) return scanVirusTotalFixture(data);
+    // Never send real candidate documents or unknown file contents to public VirusTotal.
+    // A configured private scanner handles ordinary resumes instead.
+    if(!process.env.CLAMAV_HOST?.trim()) throw new HttpError(503,'Ordinary resume uploads require a configured private ClamAV scanner. Use the supplied dummy PDF for VirusTotal testing.');
+  } else if(provider!=='clamav') throw new HttpError(503,'Unknown antivirus provider');
+  const host=process.env.CLAMAV_HOST?.trim();
   const port=Number(process.env.CLAMAV_PORT || 3310);
   if(!host) {
     if(process.env.NODE_ENV==='production') throw new HttpError(503,'Resume antivirus scanner is not configured');
@@ -54,12 +62,12 @@ export async function scanResume(data:Buffer):Promise<void> {
 // Isolated non-commercial testing only. Only explicitly allowlisted synthetic
 // fixtures may leave the CRM; never submit actual candidate documents.
 async function scanVirusTotalFixture(data:Buffer):Promise<void> {
-  const key=process.env.VIRUSTOTAL_API_KEY;
+  const key=process.env.VIRUSTOTAL_API_KEY?.trim();
   const hash=createHash('sha256').update(data).digest('hex');
-  const fixtures=(process.env.VIRUSTOTAL_TEST_FIXTURE_SHA256||'').split(',').map(s=>s.trim().toLowerCase());
-  if(process.env.VIRUSTOTAL_TEST_ONLY!=='true' || !key || !fixtures.includes(hash)) {
-    throw new HttpError(503,'VirusTotal is restricted to explicitly approved synthetic test fixtures');
-  }
+  if(hash!==SYNTHETIC_FIXTURE_SHA256) throw new HttpError(400,'Only the supplied fictional test PDF is approved for VirusTotal');
+  if((process.env.VIRUSTOTAL_TEST_ONLY||'').trim().toLowerCase()!=='true')
+    throw new HttpError(503,'VirusTotal test mode is not enabled in this deployed function (VIRUSTOTAL_TEST_ONLY)');
+  if(!key) throw new HttpError(503,'VirusTotal API key is not available in this deployed function (VIRUSTOTAL_API_KEY)');
   const request=async(path:string,init:RequestInit={})=>{
     try {
       const response=await fetch('https://www.virustotal.com/api/v3/'+path,{
