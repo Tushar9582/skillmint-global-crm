@@ -1039,3 +1039,125 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.nav-scroll::-webkit-scrollbar,
 @media(max-width:650px){.hd-settings-grid{grid-template-columns:1fr}.hd-settings-card{padding:16px}.hd-logo-row{gap:12px}.hd-brand-preview{flex-basis:100%}}
 
 .hd-search-card{background:white;border:1px solid #dfe8f2;border-radius:16px;padding:24px;box-shadow:0 5px 18px #123d6510}.hd-search-label,.hd-filter-grid label{font-size:14px;font-weight:700;color:#244a70}.hd-search-input{display:flex;align-items:center;gap:12px;border:1px solid #cbdcec;border-radius:11px;padding:0 14px;height:52px;margin:8px 0;color:#4476a6}.hd-search-input input{width:100%;outline:0;border:0;font-size:16px;background:transparent;color:#143759}.hd-keywords{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.hd-keywords button,.hd-keywords span{border:1px solid #dbe7f3;background:#f1f6fc;color:#28578a;border-radius:6px;padding:5px 9px;font-size:12px}.hd-filter-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px;margin:20px 0}.hd-filter-grid label{display:flex;flex-direction:column;gap:7px}.hd-search-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.hd-search-metrics>div{padding:20px;background:white;border:1px solid #dfe8f2;border-radius:12px;display:flex;flex-direction:column;gap:8px}.hd-search-metrics small{color:#68849f}.hd-search-metrics strong{font-size:28px;color:#163b61}.hd-results-head,.hd-search-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0}.hd-search-actions{background:#f0f5fb;padding:12px;border-radius:9px;justify-content:flex-start}.hd-search-actions select{max-width:250px}.hd-search-actions details a{display:block;padding:6px}.hd-search-table{width:100%;border-collapse:collapse;min-width:800px}.hd-search-table td,.hd-search-table th{text-align:left;padding:12px 10px;border-bottom:1px solid #e4ebf4}.hd-search-table td small{display:block;color:#718ca6;margin-top:5px}.hd-search-table th{font-size:12px;color:#617b95;background:#f5f8fc}.hd-search-table td{font-size:13px;color:#254663}.hd-search-table .hd-keywords{margin:0;max-width:280px}@media(max-width:650px){.hd-search-card{padding:15px}.hd-filter-grid{grid-template-columns:1fr}.hd-search-metrics{gap:8px}.hd-search-metrics>div{padding:12px}.hd-search-metrics strong{font-size:22px}}
+
+
+/* Corporate minimal CRM refresh — overrides only presentation, not workflow. */
+:root{
+  --navy:#102f59;--navy-2:#153e70;--ink:#25364c;--ink-strong:#192d49;
+  --muted:#697c94;--teal:#2167b0;--teal-dark:#175593;--mint:#ecf4fe;
+  --surface:#f5f7fb;--line:#dfe6ef;--white:#fff;
+  --shadow:0 2px 10px rgba(16,47,89,.035)
+}
+html,body{font-family:'DM Sans',Arial,sans-serif;background:var(--surface);color:var(--ink)}
+h1,h2,h3,h4{font-family:'DM Sans',Arial,sans-serif;letter-spacing:-.025em}
+.eyebrow{color:#476b96;font-size:10px;letter-spacing:.65px}
+.btn{min-height:40px;padding:9px 15px;border-radius:7px;font-size:13px;font-weight:650;box-shadow:none;transition:background .15s,border-color .15s}
+.btn:not(:disabled):hover{transform:none}
+.btn.primary{background:#2167b0;color:white;box-shadow:none}
+.btn.primary:hover{background:#195694}
+.btn.ghost,.btn.secondary{color:#245b96;border-color:#d6e0eb;background:white}
+.btn.soft{color:#275e9b;background:#eef4fb}
+.icon-only{color:#60758b}
+.icon-only:hover{background:#edf2f8}
+.sidebar{background:#102c50;color:#d7e4f1;width:232px;min-width:232px}
+.sidebar-brand{padding:21px 18px;min-height:81px;border-bottom:1px solid rgba(255,255,255,.09)}
+.sidebar-brand .brand strong,.sidebar-brand .hd-tenant-name strong{font-size:16px;letter-spacing:-.3px}
+.nav-scroll{padding:9px 10px 17px}
+.nav-group{margin:19px 11px 7px;color:#9cb4ce;font-size:10px;font-weight:700;letter-spacing:.65px}
+.nav-link{min-height:40px;margin:2px 0;border-radius:7px;padding:10px 12px;font-size:13px;font-weight:550;color:#dce7f5}
+.nav-link:hover{background:#1b426e;color:white}
+.nav-link.active{background:#fff;color:#174c87;font-weight:700}
+.nav-link.active::before{display:none}
+.nav-link.active svg{color:#2167b0}
+.sidebar-bottom{padding:11px 12px 16px}
+.cloud-chip{background:#173b67;border:1px solid rgba(255,255,255,.08);color:#d7e8f6;padding:10px;font-weight:650;font-size:10px}
+.cloud-chip small{color:#a8c1dd}
+.status-dot{background:#4dbd97}
+.side-user{border-top-color:rgba(255,255,255,.14)}
+.avatar,.top-avatar{background:#eaf2fc;color:#205f9f}
+.topbar{min-height:62px;padding:9px clamp(16px,2.4vw,30px);border-bottom:1px solid #e1e7ef}
+.breadcrumbs{font-size:12px;color:#778ba3}
+.breadcrumbs b{color:#24476d;font-weight:600}
+.global-search{background:#f7f9fc;border:1px solid #dce5ef;border-radius:7px;min-height:36px}
+.global-search input{font-size:13px}
+.topbar-cloud{background:#edf4fb;color:#316397;font-size:10px;padding:8px 11px;font-weight:650}
+.top-icon{background:#f2f6fb;color:#436e9e;border-radius:7px}
+.content-area{padding:25px clamp(16px,2.4vw,32px) 40px}
+.page-shell{gap:18px}
+.page-heading h1{font-size:clamp(23px,2.1vw,29px);font-weight:750;letter-spacing:-.65px}
+.page-heading p:not(.eyebrow){font-size:13px;color:#71849a}
+.heading-actions{gap:8px}
+.panel,.metric-card,.module-link-card,.hd-search-card,.hd-settings-card{background:white;border:1px solid #e1e7f0;border-radius:9px;box-shadow:0 1px 3px rgba(16,47,89,.025)}
+.metric-grid{gap:12px}
+.metric-card{min-height:116px;padding:17px}
+.metric-card:hover,.module-link-card:hover{border-color:#b9cee5;box-shadow:0 3px 12px rgba(16,47,89,.05)}
+.metric-label{color:#61738a;font-weight:650;font-size:13px}
+.metric-icon,.queue-marker,.module-link-icon{background:#ecf4fd;color:#2366a7;border-radius:8px}
+.metric-number{font-family:'DM Sans',Arial,sans-serif;font-size:28px;color:#193653;letter-spacing:-.5px}
+.metric-card p{font-size:12px;color:#7a8ca0}
+.mini-metric{min-height:70px;border-radius:8px;padding:13px;background:#fff;color:#2c6eae}
+.mini-metric span{font-size:12px;color:#60768e}
+.mini-metric strong{font-size:22px;color:#183a5a}
+.panel-header{padding:17px 19px;border-bottom:1px solid #e7edf4}
+.panel-header h2{font-size:16px;font-weight:700}
+.panel-header p{font-size:12px;color:#7b8da0}
+.module-section-heading p,.module-link-copy small{color:#71849b;font-size:12px}
+.module-link-copy strong{font-size:14px;color:#203c5b}
+.toolbar{padding:12px 15px}
+.toolbar-search,.toolbar>select,.form-input,.hd-search-input{border-radius:7px;border-color:#d9e2ed}
+.toolbar-search input,.toolbar>select,.form-input{font-size:13px}
+.table-panel{border-radius:9px}
+table{font-size:13px}
+thead{background:#f7f9fc}
+th{font-size:11px;color:#667d98;font-weight:700;padding:12px 14px}
+td{padding:13px 14px;color:#485e77;border-bottom:1px solid #ecf0f5}
+tbody tr:hover{background:#f8fbff}
+.table-action,.record-link,.text-link{color:#1c60a6;font-size:12px;font-weight:650}
+.status-badge{border-radius:6px;font-size:11px;font-weight:650;padding:5px 9px}
+.modal,.detail-drawer{border-radius:10px;box-shadow:0 15px 46px rgba(20,45,76,.13)}
+.modal-header{border-bottom-color:#e8edf4}
+.modal-header h2{font-size:23px;letter-spacing:-.5px}
+.modal-header p:not(.eyebrow){font-size:13px;color:#6a7d91}
+.form-field>span,.hd-settings-field{font-size:13px;color:#3a5878;font-weight:650}
+.form-input{min-height:41px;background:white}
+.form-input:focus,.toolbar-search:focus-within,.global-search:focus-within{outline-color:#2167b0;border-color:#80aadd}
+.alert{border-radius:7px;font-size:13px}
+.dropzone{border-radius:9px}
+.quick-actions a,.queue-row{color:#28649d}
+.quick-actions a b,.queue-row b{font-size:13px}
+.quick-actions a small,.queue-row small{font-size:12px}
+
+/* Match the supplied clean corporate login: centered card, no promotional split. */
+.skillmint-auth{min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:1fr;background:#eaf1fb;padding:28px}
+.skillmint-auth-story{display:none}
+.skillmint-auth-form-side{display:grid;place-items:center;min-height:calc(100vh - 56px);padding:20px}
+.skillmint-auth-form-shell{width:min(100%,440px);max-width:440px;background:#fff;border:1px solid #dbe5f1;border-radius:9px;overflow:hidden;box-shadow:0 9px 28px rgba(35,65,105,.1);padding:0 30px 21px;text-align:center}
+.skillmint-auth-card-head{height:65px;margin:0 -30px 22px;padding:0 25px;background:#195a9f;display:flex;align-items:center;justify-content:center;gap:10px;color:white}
+.skillmint-auth-card-head img{width:38px;height:38px;object-fit:contain;background:#fff;border-radius:6px;padding:3px}
+.skillmint-auth-card-head strong{color:#fff;font-size:16px;letter-spacing:-.2px}
+.skillmint-auth-welcome{display:none}
+.skillmint-auth-form-shell h2{color:#243b56;font-size:21px;letter-spacing:-.4px;margin:0 0 8px;font-weight:700}
+.skillmint-auth-subtitle{font-size:13px;line-height:1.5;margin:0 auto;color:#77889d;max-width:350px}
+.skillmint-auth-form{margin-top:23px;text-align:left}
+.skillmint-auth-form label{font-size:12px;font-weight:650;margin-bottom:6px;color:#48627f}
+.skillmint-auth-input{height:45px;padding:0 12px;border-radius:6px;border-color:#cdd8e6;margin-bottom:16px;gap:9px}
+.skillmint-auth-input>svg{width:17px;height:17px}
+.skillmint-auth-input input{font-size:13px}
+.skillmint-auth-submit{min-height:43px;border-radius:6px;background:#2167b0;box-shadow:none;margin-top:7px;font-size:13px;font-weight:700}
+.skillmint-auth-submit:not(:disabled):hover{transform:none;background:#195a99;box-shadow:none}
+.skillmint-auth-submit svg{width:17px;height:17px}
+.skillmint-auth-help{margin-top:16px;font-size:12px}
+.skillmint-auth-copyright{margin-top:18px;font-size:11px;color:#94a3b5}
+.skillmint-auth-form-shell .hd-social{margin-top:13px;gap:9px}
+.skillmint-auth-form-shell .hd-google{min-height:40px;border-radius:6px;font-size:13px}
+.skillmint-auth-form-shell .skillmint-auth-preview{margin-top:15px;text-align:left}
+@media(max-width:750px){
+  .skillmint-auth{padding:15px;grid-template-columns:1fr}
+  .skillmint-auth-form-side{padding:0;min-height:calc(100dvh - 30px);align-items:center}
+  .skillmint-auth-form-shell{padding:0 19px 19px}
+  .skillmint-auth-card-head{margin:0 -19px 20px}
+  .sidebar{width:248px;min-width:248px}
+  .content-area{padding:19px 14px 28px}
+  .topbar{min-height:59px}
+}
+@media(prefers-reduced-motion:reduce){.btn,.metric-card,.module-link-card{transition:none}}

@@ -88,9 +88,10 @@ export function LoginForm() {
 
     <section className="skillmint-auth-form-side">
       <div className="skillmint-auth-form-shell">
+        <div className="skillmint-auth-card-head"><img src="/brand/hrdiary-mark.svg" alt="" width="38" height="38"/><strong>HrDiary Recruitment CRM</strong></div>
         <span className="skillmint-auth-welcome"><span className="skillmint-auth-welcome-dot"/> WELCOME BACK</span>
-        <h2>Sign in to HrDiary</h2>
-        <p className="skillmint-auth-subtitle">Enter your work credentials to access your recruitment dashboard.</p>
+        <h2>Welcome Back</h2>
+        <p className="skillmint-auth-subtitle">Please enter your credentials to continue.</p>
 
         {preview && <div className="skillmint-auth-preview" role="status">
           Preview environment: use your configured preview credentials. Real candidate data is not connected.
@@ -129,7 +130,7 @@ export function LoginForm() {
 
           <button className="skillmint-auth-submit" type="submit" disabled={submitting}>
             {submitting ? <><LoaderCircle size={20} className="skillmint-auth-spin"/> Signing in…</>
-              : <>Sign in to Dashboard <ArrowRight size={20}/></>}
+              : <>Sign In <ArrowRight size={20}/></>}
           </button>
         </form>
 
